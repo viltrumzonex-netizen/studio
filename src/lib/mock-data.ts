@@ -14,24 +14,24 @@ export const walletCoins: Coin[] = [
         id: 'viltrum-coin',
         name: 'Viltrum Coin',
         symbol: 'VTC',
-        amount: 25000,
-        usdValue: 25000,
+        amount: 250,
+        usdValue: 250,
         icon: ViltrumLogo,
     },
     {
         id: 'ethereum',
         name: 'Ethereum',
         symbol: 'ETH',
-        amount: 10,
-        usdValue: 30000,
+        amount: 0.05,
+        usdValue: 150,
         icon: Ethereum,
     },
     {
         id: 'usd-coin',
         name: 'USD Coin',
         symbol: 'USDC',
-        amount: 15000,
-        usdValue: 15000,
+        amount: 50,
+        usdValue: 50,
         icon: UsdCoin,
     }
 ];
@@ -61,8 +61,8 @@ export const transactions: Transaction[] = [
         id: '2',
         type: 'received',
         coin: walletCoins[1], // Ethereum
-        amount: 2,
-        usdValue: 6000,
+        amount: 0.05,
+        usdValue: 150,
         date: new Date('2024-05-20T10:00:00Z'),
         address: '0x123...abc'
     },
@@ -79,8 +79,8 @@ export const transactions: Transaction[] = [
         id: '4',
         type: 'received',
         coin: walletCoins[2], // USDC
-        amount: 500,
-        usdValue: 500,
+        amount: 50,
+        usdValue: 50,
         date: new Date('2024-05-18T09:00:00Z'),
         address: '0x456...def'
     },

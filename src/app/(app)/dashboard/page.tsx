@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { totalBalance, transactions } from "@/lib/mock-data";
+import { totalBalance, transactions, walletCoins } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import { ArrowUpRight, ArrowDownLeft, PlusCircle } from "lucide-react";
 import Link from 'next/link';
@@ -10,6 +10,10 @@ import { cn } from "@/lib/utils";
 import AnimatedBalance from "@/components/dashboard/animated-balance";
 import { useAuth } from "@/hooks/use-auth";
 
+// Find the Viltrum Coin from the wallet to display its balance
+const viltrumCoin = walletCoins.find(c => c.symbol === 'VTC');
+const vtcBalance = viltrumCoin ? viltrumCoin.amount : 0;
+
 export default function DashboardPage() {
     const { user } = useAuth();
     
@@ -17,24 +21,38 @@ export default function DashboardPage() {
         <div className="container mx-auto p-4 md:p-8 space-y-8">
             <header>
                 {user && <p className="text-lg text-muted-foreground">Bienvenido de nuevo, {user.displayName}</p>}
-                <p className="text-muted-foreground">Balance Total</p>
-                <AnimatedBalance value={totalBalance} />
+                <h1 className="text-4xl font-bold font-headline text-glow mt-1">Panel Principal</h1>
             </header>
 
-            <section className="flex gap-4">
-                <Button asChild size="lg" className="flex-1 bg-gradient-to-r from-primary to-accent text-primary-foreground hover:opacity-90 transition-opacity">
-                    <Link href="/transactions">
-                        <ArrowUpRight className="mr-2 h-5 w-5"/>
-                        Enviar
-                    </Link>
-                </Button>
-                <Button asChild size="lg" className="flex-1 bg-white/10 border border-white/20 hover:bg-white/20">
-                     <Link href="/transactions">
-                        <ArrowDownLeft className="mr-2 h-5 w-5"/>
-                        Recibir
-                    </Link>
-                </Button>
-            </section>
+            <Card className="glass-card rounded-xl overflow-hidden">
+                <CardContent className="p-6 space-y-4">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <p className="text-muted-foreground">Balance Total</p>
+                            <AnimatedBalance value={vtcBalance} />
+                        </div>
+                         <div className="flex items-center gap-2">
+                             <img src="/viltrum-logo.svg" alt="Viltrum Coin" className="w-8 h-8"/>
+                             <span className="font-bold text-lg">VTC</span>
+                         </div>
+                    </div>
+                   
+                    <div className="flex gap-4 pt-4">
+                        <Button asChild size="lg" className="flex-1 bg-gradient-to-r from-primary to-accent text-primary-foreground hover:opacity-90 transition-opacity">
+                            <Link href="/transactions">
+                                <ArrowUpRight className="mr-2 h-5 w-5"/>
+                                Enviar
+                            </Link>
+                        </Button>
+                        <Button asChild size="lg" className="flex-1 bg-white/10 border border-white/20 hover:bg-white/20">
+                            <Link href="/transactions">
+                                <ArrowDownLeft className="mr-2 h-5 w-5"/>
+                                Recibir
+                            </Link>
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
 
             <section>
                  <Card className="glass-card rounded-lg">
