@@ -3,12 +3,13 @@
 import { walletCoins } from "@/lib/mock-data";
 import CoinCard from "@/components/wallet/coin-card";
 import { useSettings } from "@/hooks/use-settings";
+import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 
 export default function WalletPage() {
-    const { iconSize, titleSize } = useSettings();
+    const { titleSize } = useSettings();
 
     return (
-        <div className="container mx-auto p-4 md:p-8 space-y-6">
+        <div className="container mx-auto p-4 md:p-8 space-y-6 flex flex-col h-full">
             <header>
                  <h1 
                     className="font-bold font-headline text-glow"
@@ -18,10 +19,22 @@ export default function WalletPage() {
                 </h1>
                 <p className="text-muted-foreground mt-1">Un resumen de tus criptoactivos.</p>
             </header>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {walletCoins.map(coin => (
-                    <CoinCard key={coin.id} coin={coin} iconSize={iconSize} />
-                ))}
+            
+            <div className="flex-1 flex items-center justify-center">
+                 <Carousel
+                    opts={{
+                        align: "start",
+                    }}
+                    className="w-full max-w-sm"
+                    >
+                    <CarouselContent>
+                        {walletCoins.map((coin) => (
+                        <CarouselItem key={coin.id}>
+                            <CoinCard coin={coin} />
+                        </CarouselItem>
+                        ))}
+                    </CarouselContent>
+                </Carousel>
             </div>
         </div>
     )

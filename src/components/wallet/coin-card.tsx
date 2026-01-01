@@ -1,29 +1,42 @@
 import type { Coin } from "@/lib/mock-data";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Image from 'next/image';
+import { cn } from "@/lib/utils";
 
 interface CoinCardProps {
     coin: Coin;
-    iconSize: number;
 }
 
-export default function CoinCard({ coin, iconSize }: CoinCardProps) {
+export default function CoinCard({ coin }: CoinCardProps) {
     return (
-        <Card className="glass-card rounded-lg hover:border-primary/50 transition-colors duration-300">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-lg font-medium">{coin.name}</CardTitle>
-                <div className="flex items-center justify-center">
-                     <Image src={coin.iconUrl} alt={`${coin.name} logo`} width={iconSize} height={iconSize} />
+        <div className={cn(
+            "aspect-[1.586] w-full rounded-2xl p-6 flex flex-col justify-between relative overflow-hidden",
+            "bg-gradient-to-br from-primary/30 to-accent/30 border border-white/20 shadow-2xl backdrop-blur-lg"
+        )}>
+             <Image 
+                src="/viltrum-logo-2.png" 
+                alt="Viltrum Pattern" 
+                width={200}
+                height={200}
+                className="absolute -right-8 -top-8 opacity-10 pointer-events-none rotate-12"
+             />
+
+            <div className="relative z-10">
+                <div className="flex justify-between items-start">
+                    <h2 className="text-xl font-bold text-white">{coin.name}</h2>
+                     <Image src={coin.iconUrl} alt={`${coin.name} logo`} width={48} height={48} />
                 </div>
-            </CardHeader>
-            <CardContent>
-                <div className="text-2xl font-bold">
-                    {coin.amount.toLocaleString('es-VE')} {coin.symbol}
-                </div>
-                <p className="text-xs text-muted-foreground">
+                <p className="font-mono text-sm text-primary-foreground/70">{coin.symbol}</p>
+            </div>
+
+            <div className="relative z-10 text-right">
+                <p className="text-sm text-primary-foreground/70">Balance</p>
+                <p className="text-3xl font-bold font-headline text-white">
+                    {coin.amount.toLocaleString('es-VE')}
+                </p>
+                <p className="text-sm text-primary-foreground/70">
                     ~${coin.usdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
-            </CardContent>
-        </Card>
+            </div>
+        </div>
     )
 }
