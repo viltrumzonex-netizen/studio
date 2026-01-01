@@ -28,7 +28,7 @@ export default function WalletPage() {
                     opts={{
                         align: "start",
                     }}
-                    className="w-full max-w-sm"
+                    className="w-full max-w-md"
                     >
                     <CarouselContent>
                         {walletCoins.map((coin) => (
