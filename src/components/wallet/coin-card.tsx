@@ -8,7 +8,7 @@ export default function CoinCard({ coin }: { coin: Coin }) {
             <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-lg font-medium">{coin.name}</CardTitle>
                 <div className="p-2 bg-white/10 rounded-full">
-                     <Image src={coin.iconUrl} alt={`${coin.name} logo`} width={32} height={32} />
+                     <Image src={coin.iconUrl} alt={`${coin.name} logo`} width={48} height={48} />
                 </div>
             </CardHeader>
             <CardContent>
