@@ -4,8 +4,9 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import AuthForm from '@/components/auth/auth-form';
-import { ViltrumCoin } from '@/components/icons';
 import { Skeleton } from '@/components/ui/skeleton';
+import Image from 'next/image';
+import { ViltrumCoin } from '@/components/icons';
 
 export default function LoginPage() {
   const { user, loading } = useAuth();
@@ -43,8 +44,8 @@ export default function LoginPage() {
         </div>
       <div className="z-10 w-full max-w-md">
         <div className="text-center mb-8">
-            <div className="inline-block p-4 bg-white/10 rounded-2xl mb-4">
-                <ViltrumCoin className="w-16 h-16 text-primary" />
+            <div className="inline-block bg-white/10 rounded-2xl mb-4">
+                <Image src="https://storage.googleapis.com/monite-api-public-images/viltrum-logo.png" alt="Viltrum Wallet Logo" width={80} height={80} className="p-2"/>
             </div>
             <h1 className="text-4xl font-bold font-headline text-glow">Viltrum Wallet</h1>
             <p className="text-muted-foreground mt-2">Tu portal al futuro de las finanzas.</p>

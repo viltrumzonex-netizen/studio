@@ -1,5 +1,6 @@
 import type { Coin } from "@/lib/mock-data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Image from 'next/image';
 
 export default function CoinCard({ coin }: { coin: Coin }) {
     return (
@@ -7,7 +8,7 @@ export default function CoinCard({ coin }: { coin: Coin }) {
             <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-lg font-medium">{coin.name}</CardTitle>
                 <div className="p-2 bg-white/10 rounded-full">
-                    <coin.icon className="w-6 h-6 text-foreground" />
+                     <Image src={coin.iconUrl} alt={`${coin.name} logo`} width={24} height={24} />
                 </div>
             </CardHeader>
             <CardContent>

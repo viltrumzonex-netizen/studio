@@ -11,11 +11,11 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ViltrumLogo } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
+import Image from 'next/image';
 
 const navItems = [
   { href: '/dashboard', label: 'Panel', icon: LayoutDashboard },
@@ -46,7 +46,7 @@ export default function Sidebar() {
   return (
     <aside className="hidden md:flex flex-col w-64 bg-background border-r border-white/10 p-4 space-y-8">
       <div className="flex items-center gap-2 px-2">
-        <ViltrumLogo className="w-8 h-8 text-primary" />
+        <Image src="https://storage.googleapis.com/monite-api-public-images/viltrum-logo.png" alt="Viltrum Wallet Logo" width={32} height={32} />
         <h1 className="text-xl font-bold font-headline text-glow">Viltrum Wallet</h1>
       </div>
       

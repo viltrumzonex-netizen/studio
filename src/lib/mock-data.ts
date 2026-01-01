@@ -1,4 +1,3 @@
-import { ViltrumCoin, Ethereum, UsdCoin } from '@/components/icons';
 
 export type Coin = {
     id: string;
@@ -6,7 +5,7 @@ export type Coin = {
     symbol: string;
     amount: number;
     usdValue: number;
-    icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+    iconUrl: string;
 };
 
 export const walletCoins: Coin[] = [
@@ -16,7 +15,7 @@ export const walletCoins: Coin[] = [
         symbol: 'VTC',
         amount: 250,
         usdValue: 250,
-        icon: ViltrumCoin,
+        iconUrl: 'https://storage.googleapis.com/monite-api-public-images/viltrum-coin.png',
     },
 ];
 
