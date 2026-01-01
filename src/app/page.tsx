@@ -45,7 +45,6 @@ export default function LoginPage() {
         <div className="text-center mb-8">
             <Image src="/viltrum-logo-2.png" alt="Viltrum Wallet Logo" width={96} height={96} className="mx-auto mb-4"/>
             <h1 className="text-4xl font-bold font-headline text-glow">Viltrum Wallet</h1>
-            <p className="text-muted-foreground mt-2">Tu portal al futuro de las finanzas.</p>
         </div>
         <AuthForm />
       </div>
