@@ -16,7 +16,6 @@ const vtcIconUrl = viltrumCoin ? viltrumCoin.iconUrl : '';
 
 export default function BalanceCard() {
     const { exchangeRate } = useSettings();
-    const usdValue = vtcBalance; // Assuming 1 VTC = 1 USD for this mock
     const vesValue = vtcBalance * exchangeRate;
 
     return (
@@ -43,7 +42,6 @@ export default function BalanceCard() {
                         <Image src={vtcIconUrl} alt="VTC Coin" width={56} height={56} className="-ml-2" />
                     </div>
                     <div className='-mt-2 space-y-1'>
-                        <p className="text-muted-foreground">${usdValue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} USD</p>
                         <p className="text-muted-foreground">{vesValue.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} VES</p>
                     </div>
                 </div>
