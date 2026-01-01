@@ -36,8 +36,11 @@ export default function BalanceCard() {
                 </div>
                 
                 <div>
-                    <AnimatedBalance value={vtcBalance} />
-                    <p className="text-muted-foreground -mt-1">${usdValue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} USD</p>
+                    <div className="flex items-center gap-4">
+                        <AnimatedBalance value={vtcBalance} />
+                        <Image src={vtcIconUrl} alt="VTC Coin" width={48} height={48} className="-ml-2" />
+                    </div>
+                    <p className="text-muted-foreground -mt-2">${usdValue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} USD</p>
                 </div>
                 
                 <div className="grid grid-cols-3 gap-2 pt-4">

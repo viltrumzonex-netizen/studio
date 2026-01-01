@@ -42,7 +42,7 @@ export default function AnimatedBalance({ value }: { value: number }) {
   const animatedValue = useCountUp(value);
 
   return (
-    <h1 
+    <div 
       className="font-bold font-headline text-glow"
       style={{ fontSize: `${balanceSize}px` }}
     >
@@ -50,6 +50,6 @@ export default function AnimatedBalance({ value }: { value: number }) {
         minimumFractionDigits: 0,
         maximumFractionDigits: 0,
       })}
-    </h1>
+    </div>
   );
 }
