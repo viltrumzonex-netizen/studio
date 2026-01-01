@@ -4,7 +4,7 @@ import Image from 'next/image';
 
 // Mini-panel de configuración:
 // Para cambiar el tamaño del icono, indica un nuevo valor para ICON_SIZE.
-const ICON_SIZE = 64;
+const ICON_SIZE = 100;
 
 export default function CoinCard({ coin }: { coin: Coin }) {
     return (
