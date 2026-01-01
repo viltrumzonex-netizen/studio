@@ -6,7 +6,6 @@ import { useAuth } from '@/hooks/use-auth';
 import AuthForm from '@/components/auth/auth-form';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
-import { ViltrumCoin } from '@/components/icons';
 
 export default function LoginPage() {
   const { user, loading } = useAuth();
@@ -24,7 +23,7 @@ export default function LoginPage() {
         <div className="flex min-h-screen flex-col items-center justify-center p-4 bg-background">
             <div className="w-full max-w-md space-y-6">
                 <div className="flex justify-center">
-                    <ViltrumCoin className="w-24 h-24 text-primary animate-pulse" />
+                    <Image src="https://storage.googleapis.com/monite-api-public-images/viltrum-logo.png" alt="Viltrum Wallet Logo" width={96} height={96} className="animate-pulse" priority />
                 </div>
                 <div className="space-y-4">
                     <Skeleton className="h-10 w-full" />
