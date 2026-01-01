@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import AuthForm from '@/components/auth/auth-form';
 import { NeonWalletLogo } from '@/components/icons';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function LoginPage() {
   const { user, loading } = useAuth();
@@ -17,10 +18,19 @@ export default function LoginPage() {
   }, [user, loading, router]);
 
   if (loading || (!loading && user)) {
-    // Render a loading state while redirecting
+    // Render a loading state while checking auth and redirecting
     return (
         <div className="flex min-h-screen flex-col items-center justify-center p-4 bg-background">
-            <NeonWalletLogo className="w-24 h-24 mb-6 text-primary animate-pulse" />
+            <div className="w-full max-w-md space-y-6">
+                <div className="flex justify-center">
+                    <NeonWalletLogo className="w-24 h-24 text-primary animate-pulse" />
+                </div>
+                <div className="space-y-4">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-12 w-full mt-4" />
+                </div>
+            </div>
         </div>
     );
   }
