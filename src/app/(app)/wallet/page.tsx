@@ -17,7 +17,7 @@ export default function WalletPage() {
                 >
                     Mi Billetera
                 </h1>
-                <p className="text-muted-foreground mt-1">Un resumen de tus criptoactivos.</p>
+                <p className="text-muted-foreground mt-1">Un resumen de tus coins.</p>
             </header>
             
             <div className="flex-1 flex items-center justify-center">
@@ -27,9 +27,9 @@ export default function WalletPage() {
                     }}
                     className="w-full max-w-sm"
                     >
-                    <CarouselContent>
+                    <CarouselContent className="-ml-1">
                         {walletCoins.map((coin) => (
-                        <CarouselItem key={coin.id}>
+                        <CarouselItem key={coin.id} className="pl-1 basis-full">
                             <CoinCard coin={coin} />
                         </CarouselItem>
                         ))}
