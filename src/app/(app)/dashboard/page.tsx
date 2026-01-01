@@ -56,7 +56,7 @@ export default function DashboardPage() {
                                     <li key={tx.id} className="flex items-center justify-between">
                                         <div className="flex items-center gap-4">
                                             <div className={"flex items-center justify-center w-12 h-12"}>
-                                                {isTopUp ? <PlusCircle className={cn("w-6 h-6", iconColor)} /> : <Image src={tx.coin.iconUrl} alt={tx.coin.name} width={32} height={32} /> }
+                                                {isTopUp ? <PlusCircle className={cn("w-8 h-8", iconColor)} /> : <Image src={tx.coin.iconUrl} alt={tx.coin.name} width={40} height={40} /> }
                                             </div>
                                             <div>
                                                 <p className="font-semibold capitalize">{title}</p>
