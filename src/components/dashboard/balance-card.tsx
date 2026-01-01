@@ -30,7 +30,6 @@ export default function BalanceCard() {
             <CardContent className="p-6 space-y-4 relative z-10">
                 <div className="flex justify-between items-center">
                     <p className="text-muted-foreground flex items-center gap-2">
-                        <Image src={vtcIconUrl} alt="Viltrum Coin" width={24} height={24}/>
                         Balance en VTC
                     </p>
                 </div>
@@ -38,7 +37,7 @@ export default function BalanceCard() {
                 <div>
                     <div className="flex items-center gap-4">
                         <AnimatedBalance value={vtcBalance} />
-                        <Image src={vtcIconUrl} alt="VTC Coin" width={48} height={48} className="-ml-2" />
+                        <Image src={vtcIconUrl} alt="VTC Coin" width={56} height={56} className="-ml-2" />
                     </div>
                     <p className="text-muted-foreground -mt-2">${usdValue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} USD</p>
                 </div>
