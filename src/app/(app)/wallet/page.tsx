@@ -4,6 +4,9 @@ import { walletCoins } from "@/lib/mock-data";
 import CoinCard from "@/components/wallet/coin-card";
 import { useSettings } from "@/hooks/use-settings";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
+import { Button } from "@/components/ui/button";
+import { PlusCircle } from "lucide-react";
+import RechargeDialog from "@/components/wallet/recharge-dialog";
 
 export default function WalletPage() {
     const { titleSize } = useSettings();
@@ -20,14 +23,14 @@ export default function WalletPage() {
                 <p className="text-muted-foreground mt-1">Un resumen de tus coins.</p>
             </header>
             
-            <div className="flex-1 flex items-center justify-center">
+            <div className="flex-1 flex flex-col items-center justify-center gap-8">
                  <Carousel
                     opts={{
                         align: "start",
                     }}
                     className="w-full max-w-sm"
                     >
-                    <CarouselContent className="-ml-1">
+                    <CarouselContent>
                         {walletCoins.map((coin) => (
                         <CarouselItem key={coin.id} className="pl-1 basis-full">
                             <CoinCard coin={coin} />
@@ -35,6 +38,8 @@ export default function WalletPage() {
                         ))}
                     </CarouselContent>
                 </Carousel>
+
+                <RechargeDialog />
             </div>
         </div>
     )

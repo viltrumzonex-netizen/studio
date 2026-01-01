@@ -1,3 +1,6 @@
+'use client';
+
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -5,17 +8,29 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import type { RechargeRequest } from '@/lib/types';
+import { useToast } from '@/hooks/use-toast';
 
 // Mock data, in a real app this would come from your database
-const rechargeRequests = [
-    { id: 'REQ-001', user: 'user1@example.com', amountBs: '500.00', method: 'Pago Móvil', date: new Date(), status: 'pending' },
-    { id: 'REQ-002', user: 'user2@example.com', amountBs: '1,200.50', method: 'Binance', date: new Date(), status: 'pending' },
-    { id: 'REQ-003', user: 'user3@example.com', amountBs: '250.00', method: 'Zinli', date: new Date(), status: 'approved' },
+const initialRechargeRequests: RechargeRequest[] = [
+    { id: 'REQ-001', user: 'user1@example.com', amountBs: 500, method: 'Pago Móvil', reference: '012345', date: new Date(), status: 'pending' },
+    { id: 'REQ-002', user: 'user2@example.com', amountBs: 1200.50, method: 'Binance', reference: 'A-54321', date: new Date(), status: 'pending' },
+    { id: 'REQ-003', user: 'user3@example.com', amountBs: 250, method: 'Zinli', reference: 'Z-98765', date: new Date(), status: 'approved' },
 ];
 
 export default function AdminPage() {
     // Current rate, this would be fetched from your DB
     const currentRate = 36.5; 
+    const { toast } = useToast();
+    const [rechargeRequests, setRechargeRequests] = useState(initialRechargeRequests);
+
+    const handleStatusChange = (id: string, newStatus: 'approved' | 'denied') => {
+        setRechargeRequests(prev => prev.map(req => req.id === id ? { ...req, status: newStatus } : req));
+        toast({
+            title: `Solicitud ${newStatus === 'approved' ? 'Aprobada' : 'Denegada'}`,
+            description: `La solicitud ${id} ha sido actualizada.`,
+        });
+    };
 
     return (
         <div className="container mx-auto p-4 md:p-8 space-y-8">
@@ -52,6 +67,7 @@ export default function AdminPage() {
                                 <TableHead>Usuario</TableHead>
                                 <TableHead>Monto (Bs.)</TableHead>
                                 <TableHead>Método</TableHead>
+                                <TableHead>Referencia</TableHead>
                                 <TableHead>Fecha</TableHead>
                                 <TableHead>Estado</TableHead>
                                 <TableHead className="text-right">Acciones</TableHead>
@@ -61,22 +77,26 @@ export default function AdminPage() {
                             {rechargeRequests.map(req => (
                                 <TableRow key={req.id}>
                                     <TableCell>{req.user}</TableCell>
-                                    <TableCell>{req.amountBs}</TableCell>
+                                    <TableCell>{req.amountBs.toLocaleString('es-VE', { minimumFractionDigits: 2 })}</TableCell>
                                     <TableCell>{req.method}</TableCell>
+                                    <TableCell>{req.reference}</TableCell>
                                     <TableCell>{req.date.toLocaleDateString()}</TableCell>
                                     <TableCell>
                                         <Badge variant={req.status === 'pending' ? 'secondary' : 'default'} className={cn(
-                                            req.status === 'pending' ? "bg-accent/80" : "bg-primary/80",
-                                            req.status === 'approved' ? "bg-green-500/80" : ""
+                                            {
+                                                'bg-yellow-500/80 text-black': req.status === 'pending',
+                                                'bg-green-500/80 text-white': req.status === 'approved',
+                                                'bg-red-500/80 text-white': req.status === 'denied',
+                                            }
                                             )}>
-                                            {req.status === 'pending' ? 'Pendiente' : 'Aprobado'}
+                                            {req.status === 'pending' ? 'Pendiente' : (req.status === 'approved' ? 'Aprobado' : 'Denegado')}
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="text-right space-x-2">
                                         {req.status === 'pending' && (
                                             <>
-                                                <Button variant="outline" size="sm" className="border-primary/50 text-primary hover:bg-primary/10">Aprobar</Button>
-                                                <Button variant="outline" size="sm" className="border-destructive/50 text-destructive hover:bg-destructive/10">Denegar</Button>
+                                                <Button variant="outline" size="sm" className="border-green-500/50 text-green-400 hover:bg-green-500/10 hover:text-green-300" onClick={() => handleStatusChange(req.id, 'approved')}>Aprobar</Button>
+                                                <Button variant="outline" size="sm" className="border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300" onClick={() => handleStatusChange(req.id, 'denied')}>Denegar</Button>
                                             </>
                                         )}
                                     </TableCell>
