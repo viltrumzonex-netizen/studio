@@ -15,7 +15,7 @@ interface SettingsState {
 const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
-      iconSize: 64, // Default icon size
+      iconSize: 100, // Default icon size
       setIconSize: (size) => set({ iconSize: size }),
       titleSize: 36, // Default page title size
       setTitleSize: (size) => set({ titleSize: size }),
@@ -34,7 +34,7 @@ const useSettingsStore = create<SettingsState>()(
 import { useState, useEffect } from 'react';
 
 const defaultSettings = {
-    iconSize: 64,
+    iconSize: 100,
     titleSize: 36,
     balanceSize: 48,
 };
