@@ -1,4 +1,4 @@
-import { ViltrumCoin, Ethereum, UsdCoin } from '@/components/icons';
+import { ViltrumLogo, Ethereum, UsdCoin } from '@/components/icons';
 
 export type Coin = {
     id: string;
@@ -16,7 +16,7 @@ export const walletCoins: Coin[] = [
         symbol: 'VTC',
         amount: 25000,
         usdValue: 25000,
-        icon: ViltrumCoin,
+        icon: ViltrumLogo,
     },
     {
         id: 'ethereum',

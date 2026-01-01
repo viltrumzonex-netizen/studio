@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import AuthForm from '@/components/auth/auth-form';
-import { ViltrumCoin } from '@/components/icons';
+import { ViltrumLogo } from '@/components/icons';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function LoginPage() {
@@ -23,7 +23,7 @@ export default function LoginPage() {
         <div className="flex min-h-screen flex-col items-center justify-center p-4 bg-background">
             <div className="w-full max-w-md space-y-6">
                 <div className="flex justify-center">
-                    <ViltrumCoin className="w-24 h-24 text-primary animate-pulse" />
+                    <ViltrumLogo className="w-24 h-24 text-primary animate-pulse" />
                 </div>
                 <div className="space-y-4">
                     <Skeleton className="h-10 w-full" />
@@ -44,10 +44,10 @@ export default function LoginPage() {
       <div className="z-10 w-full max-w-md">
         <div className="text-center mb-8">
             <div className="inline-block p-4 bg-white/10 rounded-2xl mb-4">
-                <ViltrumCoin className="w-16 h-16 text-primary" />
+                <ViltrumLogo className="w-16 h-16 text-primary" />
             </div>
             <h1 className="text-4xl font-bold font-headline text-glow">Viltrum Zone</h1>
-            <p className="text-muted-foreground mt-2">Your gateway to the future of finance.</p>
+            <p className="text-muted-foreground mt-2">Tu portal al futuro de las finanzas.</p>
         </div>
         <AuthForm />
       </div>

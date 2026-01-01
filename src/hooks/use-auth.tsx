@@ -1,13 +1,12 @@
 'use client';
 
 import { createContext, useContext, useState, type ReactNode, useEffect } from 'react';
-import { Skeleton } from "@/components/ui/skeleton";
 
 // Mock user for demo purposes
 const MOCK_USER = {
   uid: 'demo-user-id-12345',
-  email: 'user@example.com',
-  displayName: 'Demo User',
+  email: 'usuario@ejemplo.com',
+  displayName: 'Usuario Demo',
 };
 
 
@@ -30,7 +29,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // In a real app, you might check a token from localStorage here
     // For demo, we'll just stop loading.
     setLoading(false);
   }, []);
@@ -38,8 +36,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email?: string, password?: string) => {
     setLoading(true);
-    // In a real app, you would make an API call to your backend here
-    // await api.post('/login', { email, password });
     // For demo purposes, we'll just simulate a successful login.
     await new Promise(resolve => setTimeout(resolve, 500));
     setUser(MOCK_USER);
@@ -48,8 +44,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     setLoading(true);
-     // In a real app, you would make an API call to your backend here
-    // await api.post('/logout');
     await new Promise(resolve => setTimeout(resolve, 500));
     setUser(null);
     setLoading(false);
@@ -68,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error('useAuth debe ser usado dentro de un AuthProvider');
   }
   return context;
 };

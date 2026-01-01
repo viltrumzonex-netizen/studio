@@ -12,17 +12,17 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ViltrumCoin } from '@/components/icons';
+import { ViltrumLogo } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/wallet', label: 'Wallet', icon: Wallet },
-  { href: '/transactions', label: 'Activity', icon: ArrowRightLeft },
-  { href: '/ai-analysis', label: 'AI Analysis', icon: BrainCircuit },
+  { href: '/dashboard', label: 'Panel', icon: LayoutDashboard },
+  { href: '/wallet', label: 'Billetera', icon: Wallet },
+  { href: '/transactions', label: 'Actividad', icon: ArrowRightLeft },
+  { href: '/ai-analysis', label: 'Análisis IA', icon: BrainCircuit },
 ];
 
 const adminNavItems = [
@@ -38,22 +38,22 @@ export default function Sidebar() {
   const handleSignOut = async () => {
     try {
       await logout();
-      toast({ title: 'Signed Out', description: 'You have been successfully signed out.' });
+      toast({ title: 'Sesión Cerrada', description: 'Has cerrado sesión exitosamente.' });
       router.push('/');
     } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Error Signing Out', description: error.message });
+      toast({ variant: 'destructive', title: 'Error al Cerrar Sesión', description: error.message });
     }
   };
 
   return (
     <aside className="hidden md:flex flex-col w-64 bg-background border-r border-white/10 p-4 space-y-8">
       <div className="flex items-center gap-2 px-2">
-        <ViltrumCoin className="w-8 h-8 text-primary" />
+        <ViltrumLogo className="w-8 h-8 text-primary" />
         <h1 className="text-xl font-bold font-headline text-glow">Viltrum Zone</h1>
       </div>
       
       <nav className="flex-1">
-        <p className="px-3 py-2 text-xs font-semibold text-muted-foreground/50">MENU</p>
+        <p className="px-3 py-2 text-xs font-semibold text-muted-foreground/50">MENÚ</p>
         <ul className="space-y-2">
           {navItems.map((item) => {
             const isActive = pathname.startsWith(item.href);
@@ -74,7 +74,6 @@ export default function Sidebar() {
           })}
         </ul>
         
-        {/* For now, show admin link to any logged in user */}
         {user && (
              <div className="mt-8">
                 <p className="px-3 py-2 text-xs font-semibold text-muted-foreground/50">ADMIN</p>
@@ -110,7 +109,7 @@ export default function Sidebar() {
                   className='flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-muted-foreground hover:bg-primary/10 hover:text-primary'
                 >
                   <Settings className="w-5 h-5" />
-                  <span>Settings</span>
+                  <span>Configuración</span>
                 </Link>
               </li>
            <li>
@@ -120,7 +119,7 @@ export default function Sidebar() {
               className="w-full justify-start gap-3 px-3 py-2 text-muted-foreground hover:bg-destructive/20 hover:text-destructive"
             >
               <LogOut className="w-5 h-5" />
-              <span>Logout</span>
+              <span>Cerrar Sesión</span>
             </Button>
           </li>
         </ul>

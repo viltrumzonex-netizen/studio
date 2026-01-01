@@ -28,9 +28,9 @@ import { BrainCircuit, Sparkles } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 
 const analysisSchema = z.object({
-  userPortfolio: z.string().min(10, { message: "Please describe your portfolio in at least 10 characters." }),
-  riskTolerance: z.enum(['low', 'medium', 'high'], { required_error: 'You need to select a risk tolerance.' }),
-  investmentGoals: z.string().min(10, { message: "Please describe your goals in at least 10 characters." }),
+  userPortfolio: z.string().min(10, { message: "Por favor, describe tu portafolio con al menos 10 caracteres." }),
+  riskTolerance: z.enum(['low', 'medium', 'high'], { required_error: 'Debes seleccionar una tolerancia al riesgo.' }),
+  investmentGoals: z.string().min(10, { message: "Por favor, describe tus metas con al menos 10 caracteres." }),
 });
 
 export default function AnalysisForm() {
@@ -41,9 +41,9 @@ export default function AnalysisForm() {
   const form = useForm<z.infer<typeof analysisSchema>>({
     resolver: zodResolver(analysisSchema),
     defaultValues: {
-        userPortfolio: "e.g., 50% Bitcoin, 30% Ethereum, 20% various altcoins",
+        userPortfolio: "ej., 50% Bitcoin, 30% Ethereum, 20% varias altcoins",
         riskTolerance: "medium",
-        investmentGoals: "e.g., Long-term growth and diversification into new projects."
+        investmentGoals: "ej., Crecimiento a largo plazo y diversificación en nuevos proyectos."
     }
   });
 
@@ -54,11 +54,11 @@ export default function AnalysisForm() {
       const suggestion = await getInvestmentSuggestion(values);
       setResult(suggestion);
     } catch (error) {
-      console.error("AI analysis failed:", error);
+      console.error("Falló el análisis de IA:", error);
       toast({
         variant: "destructive",
-        title: "Analysis Failed",
-        description: "Could not get a suggestion. Please try again later.",
+        title: "Análisis Fallido",
+        description: "No se pudo obtener una sugerencia. Por favor, inténtalo más tarde.",
       });
     } finally {
       setIsLoading(false);
@@ -69,8 +69,8 @@ export default function AnalysisForm() {
     <div className="grid md:grid-cols-2 gap-8">
         <Card className="glass-card rounded-lg">
             <CardHeader>
-                <CardTitle>Your Profile</CardTitle>
-                <CardDescription>Provide your investment details for a personalized analysis.</CardDescription>
+                <CardTitle>Tu Perfil</CardTitle>
+                <CardDescription>Proporciona tus detalles de inversión para un análisis personalizado.</CardDescription>
             </CardHeader>
             <CardContent>
                  <Form {...form}>
@@ -80,9 +80,9 @@ export default function AnalysisForm() {
                         name="userPortfolio"
                         render={({ field }) => (
                             <FormItem>
-                            <FormLabel>Current Portfolio</FormLabel>
+                            <FormLabel>Portafolio Actual</FormLabel>
                             <FormControl>
-                                <Textarea placeholder="Describe your current crypto holdings..." {...field} />
+                                <Textarea placeholder="Describe tus tenencias de cripto actuales..." {...field} />
                             </FormControl>
                             <FormMessage />
                             </FormItem>
@@ -94,7 +94,7 @@ export default function AnalysisForm() {
                             name="riskTolerance"
                             render={({ field }) => (
                                 <FormItem className="space-y-3">
-                                <FormLabel>Risk Tolerance</FormLabel>
+                                <FormLabel>Tolerancia al Riesgo</FormLabel>
                                 <FormControl>
                                     <RadioGroup
                                     onValueChange={field.onChange}
@@ -105,19 +105,19 @@ export default function AnalysisForm() {
                                         <FormControl>
                                         <RadioGroupItem value="low" />
                                         </FormControl>
-                                        <FormLabel className="font-normal">Low</FormLabel>
+                                        <FormLabel className="font-normal">Baja</FormLabel>
                                     </FormItem>
                                     <FormItem className="flex items-center space-x-3 space-y-0">
                                         <FormControl>
                                         <RadioGroupItem value="medium" />
                                         </FormControl>
-                                        <FormLabel className="font-normal">Medium</FormLabel>
+                                        <FormLabel className="font-normal">Media</FormLabel>
                                     </FormItem>
                                     <FormItem className="flex items-center space-x-3 space-y-0">
                                         <FormControl>
                                         <RadioGroupItem value="high" />
                                         </FormControl>
-                                        <FormLabel className="font-normal">High</FormLabel>
+                                        <FormLabel className="font-normal">Alta</FormLabel>
                                     </FormItem>
                                     </RadioGroup>
                                 </FormControl>
@@ -131,16 +131,16 @@ export default function AnalysisForm() {
                         name="investmentGoals"
                         render={({ field }) => (
                             <FormItem>
-                            <FormLabel>Investment Goals</FormLabel>
+                            <FormLabel>Metas de Inversión</FormLabel>
                             <FormControl>
-                                <Textarea placeholder="What are you hoping to achieve?" {...field} />
+                                <Textarea placeholder="¿Qué esperas conseguir?" {...field} />
                             </FormControl>
                             <FormMessage />
                             </FormItem>
                         )}
                         />
                         <Button type="submit" disabled={isLoading} className="w-full bg-primary hover:bg-primary/90">
-                           {isLoading ? 'Analyzing...' : 'Get Suggestion'} <BrainCircuit className="ml-2 w-4 h-4"/>
+                           {isLoading ? 'Analizando...' : 'Obtener Sugerencia'} <BrainCircuit className="ml-2 w-4 h-4"/>
                         </Button>
                     </form>
                 </Form>
@@ -149,8 +149,8 @@ export default function AnalysisForm() {
 
         <Card className="glass-card rounded-lg flex flex-col">
             <CardHeader>
-                <CardTitle>AI Suggestion</CardTitle>
-                <CardDescription>Our AI's recommendation based on your profile.</CardDescription>
+                <CardTitle>Sugerencia de IA</CardTitle>
+                <CardDescription>La recomendación de nuestra IA basada en tu perfil.</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 flex items-center justify-center">
                 {isLoading ? (
@@ -167,7 +167,7 @@ export default function AnalysisForm() {
                 ) : result ? (
                     <div className="space-y-6">
                         <div>
-                            <h3 className="font-semibold text-lg flex items-center gap-2"><Sparkles className="w-5 h-5 text-primary" />Suggested Assets</h3>
+                            <h3 className="font-semibold text-lg flex items-center gap-2"><Sparkles className="w-5 h-5 text-primary" />Activos Sugeridos</h3>
                             <ul className="list-disc list-inside mt-2 space-y-1 text-muted-foreground">
                                 {result.suggestedAssets.map((asset, index) => (
                                     <li key={index}><span className="text-foreground font-medium">{asset}</span></li>
@@ -175,12 +175,12 @@ export default function AnalysisForm() {
                             </ul>
                         </div>
                         <div>
-                             <h3 className="font-semibold text-lg">Rationale</h3>
+                             <h3 className="font-semibold text-lg">Justificación</h3>
                              <p className="text-muted-foreground mt-2">{result.rationale}</p>
                         </div>
                     </div>
                 ) : (
-                    <p className="text-muted-foreground">Your investment suggestion will appear here.</p>
+                    <p className="text-muted-foreground">Tu sugerencia de inversión aparecerá aquí.</p>
                 )}
             </CardContent>
         </Card>

@@ -12,7 +12,7 @@ export default function CoinCard({ coin }: { coin: Coin }) {
             </CardHeader>
             <CardContent>
                 <div className="text-2xl font-bold">
-                    {coin.amount.toLocaleString()} {coin.symbol}
+                    {coin.amount.toLocaleString('es-VE')} {coin.symbol}
                 </div>
                 <p className="text-xs text-muted-foreground">
                     ~${coin.usdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}

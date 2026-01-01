@@ -6,10 +6,10 @@ import { LayoutDashboard, Wallet, ArrowRightLeft, BrainCircuit } from 'lucide-re
 import { cn } from '@/lib/utils';
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/wallet', label: 'Wallet', icon: Wallet },
-  { href: '/transactions', label: 'Activity', icon: ArrowRightLeft },
-  { href: '/ai-analysis', label: 'AI', icon: BrainCircuit },
+  { href: '/dashboard', label: 'Panel', icon: LayoutDashboard },
+  { href: '/wallet', label: 'Billetera', icon: Wallet },
+  { href: '/transactions', label: 'Actividad', icon: ArrowRightLeft },
+  { href: '/ai-analysis', label: 'IA', icon: BrainCircuit },
 ];
 
 export default function BottomNav() {

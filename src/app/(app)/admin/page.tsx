@@ -20,41 +20,41 @@ export default function AdminPage() {
     return (
         <div className="container mx-auto p-4 md:p-8 space-y-8">
             <header>
-                <h1 className="text-4xl font-bold font-headline text-glow">Admin Panel</h1>
-                <p className="text-muted-foreground mt-1">Manage Viltrum Zone settings and requests.</p>
+                <h1 className="text-4xl font-bold font-headline text-glow">Panel de Admin</h1>
+                <p className="text-muted-foreground mt-1">Gestiona la configuración y las solicitudes de Viltrum Zone.</p>
             </header>
 
             <div className="grid md:grid-cols-2 gap-8">
                 <Card className="glass-card">
                     <CardHeader>
-                        <CardTitle>Exchange Rate</CardTitle>
-                        <CardDescription>Set the VTC to Bs. exchange rate.</CardDescription>
+                        <CardTitle>Tasa de Cambio</CardTitle>
+                        <CardDescription>Establece la tasa de cambio de VTC a Bs.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="rate">Current Rate (1 VTC = X Bs.)</Label>
-                            <Input id="rate" type="number" defaultValue={currentRate} placeholder="e.g., 36.50" />
+                            <Label htmlFor="rate">Tasa Actual (1 VTC = X Bs.)</Label>
+                            <Input id="rate" type="number" defaultValue={currentRate} placeholder="ej., 36.50" />
                         </div>
-                        <Button className="w-full bg-primary hover:bg-primary/90">Update Rate</Button>
+                        <Button className="w-full bg-primary hover:bg-primary/90">Actualizar Tasa</Button>
                     </CardContent>
                 </Card>
             </div>
 
             <Card className="glass-card">
                 <CardHeader>
-                    <CardTitle>Recharge Requests</CardTitle>
-                    <CardDescription>Approve or deny user VTC recharge requests.</CardDescription>
+                    <CardTitle>Solicitudes de Recarga</CardTitle>
+                    <CardDescription>Aprueba o deniega las solicitudes de recarga de VTC de los usuarios.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>User</TableHead>
-                                <TableHead>Amount (Bs.)</TableHead>
-                                <TableHead>Method</TableHead>
-                                <TableHead>Date</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
+                                <TableHead>Usuario</TableHead>
+                                <TableHead>Monto (Bs.)</TableHead>
+                                <TableHead>Método</TableHead>
+                                <TableHead>Fecha</TableHead>
+                                <TableHead>Estado</TableHead>
+                                <TableHead className="text-right">Acciones</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -65,15 +65,18 @@ export default function AdminPage() {
                                     <TableCell>{req.method}</TableCell>
                                     <TableCell>{req.date.toLocaleDateString()}</TableCell>
                                     <TableCell>
-                                        <Badge variant={req.status === 'pending' ? 'secondary' : 'default'} className={cn(req.status === 'pending' ? "bg-accent/80" : "bg-primary/80")}>
-                                            {req.status}
+                                        <Badge variant={req.status === 'pending' ? 'secondary' : 'default'} className={cn(
+                                            req.status === 'pending' ? "bg-accent/80" : "bg-primary/80",
+                                            req.status === 'approved' ? "bg-green-500/80" : ""
+                                            )}>
+                                            {req.status === 'pending' ? 'Pendiente' : 'Aprobado'}
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="text-right space-x-2">
                                         {req.status === 'pending' && (
                                             <>
-                                                <Button variant="outline" size="sm" className="border-primary/50 text-primary hover:bg-primary/10">Approve</Button>
-                                                <Button variant="outline" size="sm" className="border-destructive/50 text-destructive hover:bg-destructive/10">Deny</Button>
+                                                <Button variant="outline" size="sm" className="border-primary/50 text-primary hover:bg-primary/10">Aprobar</Button>
+                                                <Button variant="outline" size="sm" className="border-destructive/50 text-destructive hover:bg-destructive/10">Denegar</Button>
                                             </>
                                         )}
                                     </TableCell>

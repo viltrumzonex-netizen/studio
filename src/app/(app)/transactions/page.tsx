@@ -10,8 +10,8 @@ export default function TransactionsPage() {
         <div className="container mx-auto p-4 md:p-8 space-y-6">
             <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                  <div>
-                    <h1 className="text-4xl font-bold font-headline text-glow">Activity</h1>
-                    <p className="text-muted-foreground mt-1">Your recent transaction history.</p>
+                    <h1 className="text-4xl font-bold font-headline text-glow">Actividad</h1>
+                    <p className="text-muted-foreground mt-1">Tu historial de transacciones recientes.</p>
                  </div>
                  <SendReceiveDialog />
             </header>
@@ -31,9 +31,12 @@ export default function TransactionsPage() {
                             
                             let title = '';
                             if (isTopUp) {
-                                title = `Top-up from ${tx.from}`;
-                            } else {
-                                title = `${tx.type} ${tx.coin.symbol}`;
+                                title = `Recarga de ${tx.from}`;
+                            } else if (isSent) {
+                                title = `Enviado ${tx.coin.symbol}`;
+                            }
+                            else {
+                                title = `Recibido ${tx.coin.symbol}`;
                             }
 
                             return (
@@ -44,7 +47,7 @@ export default function TransactionsPage() {
                                         </div>
                                         <div>
                                             <p className="font-semibold capitalize">{title}</p>
-                                            <p className="text-sm text-muted-foreground">{format(tx.date, 'MMM d, h:mm a')}</p>
+                                            <p className="text-sm text-muted-foreground">{format(tx.date, 'd MMM, h:mm a')}</p>
                                         </div>
                                     </div>
                                     <div className="text-right">

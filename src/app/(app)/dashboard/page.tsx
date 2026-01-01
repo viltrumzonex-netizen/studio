@@ -1,3 +1,5 @@
+'use client';
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { totalBalance, transactions } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
@@ -6,12 +8,16 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { cn } from "@/lib/utils";
 import AnimatedBalance from "@/components/dashboard/animated-balance";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function DashboardPage() {
+    const { user } = useAuth();
+    
     return (
         <div className="container mx-auto p-4 md:p-8 space-y-8">
             <header>
-                <p className="text-muted-foreground">Total Balance</p>
+                {user && <p className="text-lg text-muted-foreground">Bienvenido de nuevo, {user.displayName}</p>}
+                <p className="text-muted-foreground">Balance Total</p>
                 <AnimatedBalance value={totalBalance} />
             </header>
 
@@ -19,13 +25,13 @@ export default function DashboardPage() {
                 <Button asChild size="lg" className="flex-1 bg-gradient-to-r from-primary to-accent text-primary-foreground hover:opacity-90 transition-opacity">
                     <Link href="/transactions">
                         <ArrowUpRight className="mr-2 h-5 w-5"/>
-                        Send
+                        Enviar
                     </Link>
                 </Button>
                 <Button asChild size="lg" className="flex-1 bg-white/10 border border-white/20 hover:bg-white/20">
                      <Link href="/transactions">
                         <ArrowDownLeft className="mr-2 h-5 w-5"/>
-                        Receive
+                        Recibir
                     </Link>
                 </Button>
             </section>
@@ -33,7 +39,7 @@ export default function DashboardPage() {
             <section>
                  <Card className="glass-card rounded-lg">
                     <CardHeader>
-                        <CardTitle>Recent Activity</CardTitle>
+                        <CardTitle>Actividad Reciente</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <ul className="space-y-4">
@@ -46,9 +52,12 @@ export default function DashboardPage() {
                                 
                                 let title = '';
                                 if (isTopUp) {
-                                    title = `Top-up from ${tx.from}`;
-                                } else {
-                                    title = `${tx.type} ${tx.coin.symbol}`;
+                                    title = `Recarga de ${tx.from}`;
+                                } else if (isSent) {
+                                    title = `Enviado ${tx.coin.symbol}`;
+                                }
+                                else {
+                                    title = `Recibido ${tx.coin.symbol}`;
                                 }
 
 
@@ -60,7 +69,7 @@ export default function DashboardPage() {
                                             </div>
                                             <div>
                                                 <p className="font-semibold capitalize">{title}</p>
-                                                <p className="text-sm text-muted-foreground">{format(tx.date, 'MMM d, yyyy')}</p>
+                                                <p className="text-sm text-muted-foreground">{format(tx.date, 'd MMM, yyyy')}</p>
                                             </div>
                                         </div>
                                         <div className="text-right">
@@ -82,12 +91,12 @@ export default function DashboardPage() {
             <section>
                 <Card className="glass-card rounded-lg bg-gradient-to-br from-primary/10 to-accent/10">
                     <CardHeader>
-                        <CardTitle className="text-glow">AI-Powered Analysis</CardTitle>
+                        <CardTitle className="text-glow">Análisis con IA</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-muted-foreground mb-4">Get personalized crypto investment suggestions based on your profile.</p>
+                        <p className="text-muted-foreground mb-4">Obtén sugerencias de inversión personalizadas basadas en tu perfil.</p>
                         <Button asChild className="bg-primary hover:bg-primary/90">
-                            <Link href="/ai-analysis">Analyze My Portfolio</Link>
+                            <Link href="/ai-analysis">Analizar Mi Portafolio</Link>
                         </Button>
                     </CardContent>
                 </Card>
