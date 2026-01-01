@@ -12,8 +12,8 @@ export default function CoinCard({ coin, iconSize }: CoinCardProps) {
         <Card className="glass-card rounded-lg hover:border-primary/50 transition-colors duration-300">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-lg font-medium">{coin.name}</CardTitle>
-                <div className="p-2 bg-white/10 rounded-full flex items-center justify-center" style={{ width: iconSize, height: iconSize }}>
-                     <Image src={coin.iconUrl} alt={`${coin.name} logo`} width={iconSize * 0.6} height={iconSize * 0.6} />
+                <div className="flex items-center justify-center">
+                     <Image src={coin.iconUrl} alt={`${coin.name} logo`} width={iconSize} height={iconSize} />
                 </div>
             </CardHeader>
             <CardContent>

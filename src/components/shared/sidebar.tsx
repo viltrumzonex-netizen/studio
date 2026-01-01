@@ -23,6 +23,10 @@ const navItems = [
   { href: '/transactions', label: 'Actividad', icon: ArrowRightLeft },
 ];
 
+const bottomNavItems = [
+    { href: '/settings', label: 'Configuración', icon: Settings },
+]
+
 const adminNavItems = [
     { href: '/admin', label: 'Admin', icon: ShieldCheck },
 ]
@@ -101,15 +105,22 @@ export default function Sidebar() {
 
       <div>
         <ul className="space-y-2">
-           <li>
-                <Link
-                  href="#"
-                  className='flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-muted-foreground hover:bg-primary/10 hover:text-primary'
-                >
-                  <Settings className="w-5 h-5" />
-                  <span>Configuración</span>
-                </Link>
-              </li>
+           {bottomNavItems.map((item) => {
+             const isActive = pathname.startsWith(item.href);
+             return (
+                <li key={item.href}>
+                    <Link
+                    href={item.href}
+                    className={cn('flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-muted-foreground hover:bg-primary/10 hover:text-primary',
+                        isActive && 'bg-primary/20 text-primary font-semibold'
+                    )}
+                    >
+                    <item.icon className="w-5 h-5" />
+                    <span>{item.label}</span>
+                    </Link>
+                </li>
+             )
+           })}
            <li>
             <Button
               variant="ghost"
