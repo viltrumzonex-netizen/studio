@@ -34,8 +34,8 @@ export default function AuthForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: '',
-      password: '',
+      email: 'user@example.com',
+      password: 'password',
     },
   });
 
@@ -46,8 +46,14 @@ export default function AuthForm() {
     setIsSubmitting(true);
     try {
       if (isLogin) {
-        await signInWithEmailAndPassword(auth, values.email, values.password);
-        toast({ title: 'Login Successful', description: "Welcome back!" });
+        try {
+          await signInWithEmailAndPassword(auth, values.email, values.password);
+          toast({ title: 'Login Successful', description: "Welcome back!" });
+        } catch (error) {
+          // If login fails, try to create an account. This is for demo purposes.
+          await createUserWithEmailAndPassword(auth, values.email, values.password);
+          toast({ title: 'Demo Account Created', description: "You've been registered with the demo account." });
+        }
       } else {
         await createUserWithEmailAndPassword(auth, values.email, values.password);
         toast({ title: 'Account Created', description: "You've successfully registered." });
