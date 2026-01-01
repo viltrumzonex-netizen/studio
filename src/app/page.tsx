@@ -23,7 +23,7 @@ export default function LoginPage() {
         <div className="flex min-h-screen flex-col items-center justify-center p-4 bg-background">
             <div className="w-full max-w-md space-y-6">
                 <div className="flex justify-center">
-                    <Image src="https://storage.googleapis.com/monite-api-public-images/viltrum-logo.png" alt="Viltrum Wallet Logo" width={96} height={96} className="animate-pulse" priority />
+                    <Image src="https://storage.googleapis.com/monite-api-public-images/viltrum-logo-2.png" alt="Viltrum Wallet Logo" width={96} height={96} className="animate-pulse" priority />
                 </div>
                 <div className="space-y-4">
                     <Skeleton className="h-10 w-full" />
@@ -44,7 +44,7 @@ export default function LoginPage() {
       <div className="z-10 w-full max-w-md">
         <div className="text-center mb-8">
             <div className="inline-block bg-white/10 rounded-2xl mb-4">
-                <Image src="https://storage.googleapis.com/monite-api-public-images/viltrum-logo.png" alt="Viltrum Wallet Logo" width={80} height={80} className="p-2"/>
+                <Image src="https://storage.googleapis.com/monite-api-public-images/viltrum-logo-2.png" alt="Viltrum Wallet Logo" width={80} height={80} className="p-2"/>
             </div>
             <h1 className="text-4xl font-bold font-headline text-glow">Viltrum Wallet</h1>
             <p className="text-muted-foreground mt-2">Tu portal al futuro de las finanzas.</p>
