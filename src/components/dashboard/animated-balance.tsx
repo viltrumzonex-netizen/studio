@@ -47,8 +47,8 @@ export default function AnimatedBalance({ value }: { value: number }) {
       style={{ fontSize: `${balanceSize}px` }}
     >
       {animatedValue.toLocaleString('es-VE', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
       })}
     </h1>
   );
