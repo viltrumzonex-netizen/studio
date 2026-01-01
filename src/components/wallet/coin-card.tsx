@@ -1,12 +1,16 @@
 import type { Coin } from "@/lib/mock-data";
 import Image from 'next/image';
 import { cn } from "@/lib/utils";
+import { useSettings } from "@/hooks/use-settings";
 
 interface CoinCardProps {
     coin: Coin;
 }
 
 export default function CoinCard({ coin }: CoinCardProps) {
+    const { exchangeRate } = useSettings();
+    const vesValue = coin.amount * exchangeRate;
+
     return (
         <div className={cn(
             "aspect-[1.586] w-full rounded-2xl p-6 flex flex-col justify-between relative overflow-hidden",
@@ -34,7 +38,7 @@ export default function CoinCard({ coin }: CoinCardProps) {
                     {coin.amount.toLocaleString('es-VE')}
                 </p>
                 <p className="text-sm text-primary-foreground/70">
-                    ~${coin.usdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    ~{vesValue.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} VES
                 </p>
             </div>
         </div>
