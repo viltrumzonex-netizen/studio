@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { RechargeRequest } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { useSettings } from '@/hooks/use-settings';
 
 // Mock data, in a real app this would come from your database
 const initialRechargeRequests: RechargeRequest[] = [
@@ -19,10 +20,18 @@ const initialRechargeRequests: RechargeRequest[] = [
 ];
 
 export default function AdminPage() {
-    // Current rate, this would be fetched from your DB
-    const currentRate = 36.5; 
     const { toast } = useToast();
+    const { exchangeRate, setExchangeRate } = useSettings();
+    const [localRate, setLocalRate] = useState(exchangeRate);
     const [rechargeRequests, setRechargeRequests] = useState(initialRechargeRequests);
+
+    const handleRateUpdate = () => {
+        setExchangeRate(localRate);
+        toast({
+            title: 'Tasa Actualizada',
+            description: `La nueva tasa es 1 VTC = ${localRate} Bs.`,
+        });
+    };
 
     const handleStatusChange = (id: string, newStatus: 'approved' | 'denied') => {
         setRechargeRequests(prev => prev.map(req => req.id === id ? { ...req, status: newStatus } : req));
@@ -48,9 +57,15 @@ export default function AdminPage() {
                     <CardContent className="space-y-4">
                         <div className="space-y-2">
                             <Label htmlFor="rate">Tasa Actual (1 VTC = X Bs.)</Label>
-                            <Input id="rate" type="number" defaultValue={currentRate} placeholder="ej., 36.50" />
+                            <Input 
+                                id="rate" 
+                                type="number" 
+                                value={localRate}
+                                onChange={(e) => setLocalRate(parseFloat(e.target.value))}
+                                placeholder="ej., 36.50" 
+                            />
                         </div>
-                        <Button className="w-full bg-primary hover:bg-primary/90">Actualizar Tasa</Button>
+                        <Button className="w-full bg-primary hover:bg-primary/90" onClick={handleRateUpdate}>Actualizar Tasa</Button>
                     </CardContent>
                 </Card>
             </div>

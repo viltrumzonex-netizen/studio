@@ -32,6 +32,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Copy, PlusCircle } from "lucide-react";
+import { useSettings } from '@/hooks/use-settings';
 
 const paymentMethods = [
     {
@@ -67,6 +68,7 @@ const rechargeSchema = z.object({
 
 export default function RechargeDialog() {
   const { toast } = useToast();
+  const { exchangeRate } = useSettings();
   const [open, setOpen] = useState(false);
 
   const form = useForm<z.infer<typeof rechargeSchema>>({
@@ -105,6 +107,7 @@ export default function RechargeDialog() {
         <DialogHeader>
           <DialogTitle>Recargar Saldo</DialogTitle>
           <DialogDescription>
+            Tasa actual: <span className='font-bold text-primary'>1 VTC = {exchangeRate} Bs</span>.
             Selecciona un método, realiza el pago y luego notifícalo aquí.
           </DialogDescription>
         </DialogHeader>

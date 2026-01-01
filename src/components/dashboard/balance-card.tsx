@@ -7,6 +7,7 @@ import { ArrowUpRight, ArrowDownLeft, PlusCircle } from "lucide-react";
 import Link from 'next/link';
 import AnimatedBalance from "@/components/dashboard/animated-balance";
 import Image from "next/image";
+import { useSettings } from "@/hooks/use-settings";
 
 // Find the Viltrum Coin from the wallet to display its balance
 const viltrumCoin = walletCoins.find(c => c.symbol === 'VTC');
@@ -14,7 +15,9 @@ const vtcBalance = viltrumCoin ? viltrumCoin.amount : 0;
 const vtcIconUrl = viltrumCoin ? viltrumCoin.iconUrl : '';
 
 export default function BalanceCard() {
+    const { exchangeRate } = useSettings();
     const usdValue = vtcBalance; // Assuming 1 VTC = 1 USD for this mock
+    const vesValue = vtcBalance * exchangeRate;
 
     return (
         <Card className="glass-card rounded-xl overflow-hidden relative border-primary/20 neon-glow-primary">
@@ -39,7 +42,10 @@ export default function BalanceCard() {
                         <AnimatedBalance value={vtcBalance} />
                         <Image src={vtcIconUrl} alt="VTC Coin" width={56} height={56} className="-ml-2" />
                     </div>
-                    <p className="text-muted-foreground -mt-2">${usdValue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} USD</p>
+                    <div className='-mt-2 space-y-1'>
+                        <p className="text-muted-foreground">${usdValue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} USD</p>
+                        <p className="text-muted-foreground">{vesValue.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} VES</p>
+                    </div>
                 </div>
                 
                 <div className="grid grid-cols-3 gap-2 pt-4">

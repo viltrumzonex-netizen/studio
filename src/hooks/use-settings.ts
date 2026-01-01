@@ -10,6 +10,8 @@ interface SettingsState {
   setTitleSize: (size: number) => void;
   balanceSize: number;
   setBalanceSize: (size: number) => void;
+  exchangeRate: number;
+  setExchangeRate: (rate: number) => void;
 }
 
 const useSettingsStore = create<SettingsState>()(
@@ -21,6 +23,8 @@ const useSettingsStore = create<SettingsState>()(
       setTitleSize: (size) => set({ titleSize: size }),
       balanceSize: 48, // Default balance text size
       setBalanceSize: (size) => set({ balanceSize: size }),
+      exchangeRate: 36.5, // Default exchange rate
+      setExchangeRate: (rate) => set({ exchangeRate: rate }),
     }),
     {
       name: 'viltrum-wallet-settings', // name of the item in the storage (must be unique)
@@ -37,6 +41,7 @@ const defaultSettings = {
     iconSize: 100,
     titleSize: 36,
     balanceSize: 48,
+    exchangeRate: 36.5,
 };
 
 export const useSettings = () => {
@@ -54,5 +59,6 @@ export const useSettings = () => {
         setIconSize: () => {},
         setTitleSize: () => {},
         setBalanceSize: () => {},
+        setExchangeRate: () => {},
       };
 };
