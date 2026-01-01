@@ -4,11 +4,6 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-} from 'firebase/auth';
-import { auth } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -22,6 +17,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Mail, Lock } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
@@ -30,7 +26,10 @@ const formSchema = z.object({
 
 export default function AuthForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState('login');
   const { toast } = useToast();
+  const { login } = useAuth();
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -39,31 +38,20 @@ export default function AuthForm() {
     },
   });
 
-  const handleAuthAction = async (
-    values: z.infer<typeof formSchema>,
-    isLogin: boolean
-  ) => {
+  const handleAuthAction = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
     try {
-      if (isLogin) {
-        try {
-          await signInWithEmailAndPassword(auth, values.email, values.password);
-          toast({ title: 'Login Successful', description: "Welcome back!" });
-        } catch (error) {
-          // If login fails, try to create an account. This is for demo purposes.
-          await createUserWithEmailAndPassword(auth, values.email, values.password);
-          toast({ title: 'Demo Account Created', description: "You've been registered with the demo account." });
-        }
-      } else {
-        await createUserWithEmailAndPassword(auth, values.email, values.password);
-        toast({ title: 'Account Created', description: "You've successfully registered." });
-      }
-      // Redirect is handled by the parent page
+      // In a real app, the login/register logic would differ.
+      // You would call a different API endpoint for registration.
+      // For this demo, both buttons will just log the user in.
+      await login(values.email, values.password);
+      toast({ title: 'Login Successful', description: "Welcome back!" });
+      // Redirect is handled by the parent page/layout
     } catch (error: any) {
       toast({
         variant: 'destructive',
         title: 'Authentication Failed',
-        description: error.message,
+        description: error.message || 'An unknown error occurred.',
       });
     } finally {
       setIsSubmitting(false);
@@ -71,13 +59,13 @@ export default function AuthForm() {
   };
 
   return (
-    <Tabs defaultValue="login" className="w-full">
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
       <TabsList className="grid w-full grid-cols-2 bg-white/5">
         <TabsTrigger value="login">Login</TabsTrigger>
         <TabsTrigger value="register">Register</TabsTrigger>
       </TabsList>
       <Form {...form}>
-        <form className="space-y-6 glass-card p-6 mt-4 rounded-lg">
+        <form onSubmit={form.handleSubmit(handleAuthAction)} className="space-y-6 glass-card p-6 mt-4 rounded-lg">
           <FormField
             control={form.control}
             name="email"
@@ -111,26 +99,13 @@ export default function AuthForm() {
             )}
           />
 
-          <TabsContent value="login" className="m-0 p-0">
-            <Button
-              type="button"
-              onClick={form.handleSubmit((values) => handleAuthAction(values, true))}
-              disabled={isSubmitting}
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-            >
-              {isSubmitting ? 'Logging in...' : 'Login'}
-            </Button>
-          </TabsContent>
-          <TabsContent value="register" className="m-0 p-0">
-            <Button
-              type="button"
-              onClick={form.handleSubmit((values) => handleAuthAction(values, false))}
-              disabled={isSubmitting}
-              className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
-            >
-              {isSubmitting ? 'Registering...' : 'Register'}
-            </Button>
-          </TabsContent>
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+          >
+            {isSubmitting ? (activeTab === 'login' ? 'Logging in...' : 'Registering...') : (activeTab === 'login' ? 'Login' : 'Register')}
+          </Button>
         </form>
       </Form>
     </Tabs>

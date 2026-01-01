@@ -2,8 +2,6 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { signOut } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
 import {
   LayoutDashboard,
   Wallet,
@@ -17,6 +15,7 @@ import { NeonWalletLogo } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/use-auth';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -29,10 +28,11 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { toast } = useToast();
   const router = useRouter();
+  const { logout } = useAuth();
 
   const handleSignOut = async () => {
     try {
-      await signOut(auth);
+      await logout();
       toast({ title: 'Signed Out', description: 'You have been successfully signed out.' });
       router.push('/');
     } catch (error: any) {

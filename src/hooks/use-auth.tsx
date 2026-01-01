@@ -1,47 +1,65 @@
-"use client";
+'use client';
 
-import type { User } from "firebase/auth";
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { createContext, useContext, useState, type ReactNode, useEffect } from 'react';
 import { Skeleton } from "@/components/ui/skeleton";
 
+// Mock user for demo purposes
+const MOCK_USER = {
+  uid: 'demo-user-id-12345',
+  email: 'user@example.com',
+  displayName: 'Demo User',
+};
+
+
 interface AuthContextType {
-  user: User | null;
+  user: typeof MOCK_USER | null;
   loading: boolean;
+  login: (email?: string, password?: string) => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
+  login: async () => {},
+  logout: async () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<typeof MOCK_USER | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setLoading(false);
-    });
-    return () => unsubscribe();
+    // In a real app, you might check a token from localStorage here
+    // For demo, we'll just stop loading.
+    setLoading(false);
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-background">
-        <div className="w-full max-w-md p-8 space-y-4">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-12 w-full mt-4" />
-        </div>
-      </div>
-    );
-  }
+
+  const login = async (email?: string, password?: string) => {
+    setLoading(true);
+    // In a real app, you would make an API call to your backend here
+    // await api.post('/login', { email, password });
+    // For demo purposes, we'll just simulate a successful login.
+    await new Promise(resolve => setTimeout(resolve, 500));
+    setUser(MOCK_USER);
+    setLoading(false);
+  };
+
+  const logout = async () => {
+    setLoading(true);
+     // In a real app, you would make an API call to your backend here
+    // await api.post('/logout');
+    await new Promise(resolve => setTimeout(resolve, 500));
+    setUser(null);
+    setLoading(false);
+  };
+
+
+  const value = { user, loading, login, logout };
 
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
