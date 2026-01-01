@@ -15,7 +15,7 @@ export const walletCoins: Coin[] = [
         symbol: 'VTC',
         amount: 250,
         usdValue: 250,
-        iconUrl: 'https://storage.googleapis.com/monite-api-public-images/viltrum-coin.png',
+        iconUrl: '/viltrum-coin.png',
     },
 ];
 
