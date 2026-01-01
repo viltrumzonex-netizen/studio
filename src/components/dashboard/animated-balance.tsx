@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSettings } from '@/hooks/use-settings';
 
 function useCountUp(target: number, duration = 1) {
   const [count, setCount] = useState(0);
@@ -37,10 +38,14 @@ function useCountUp(target: number, duration = 1) {
 
 
 export default function AnimatedBalance({ value }: { value: number }) {
+  const { balanceSize } = useSettings();
   const animatedValue = useCountUp(value);
 
   return (
-    <h1 className="text-5xl font-bold font-headline text-glow">
+    <h1 
+      className="font-bold font-headline text-glow"
+      style={{ fontSize: `${balanceSize}px` }}
+    >
       {animatedValue.toLocaleString('es-VE', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
