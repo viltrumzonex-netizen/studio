@@ -6,7 +6,6 @@ import {
   LayoutDashboard,
   Wallet,
   ArrowRightLeft,
-  BrainCircuit,
   LogOut,
   Settings,
   ShieldCheck,
@@ -22,7 +21,6 @@ const navItems = [
   { href: '/dashboard', label: 'Panel', icon: LayoutDashboard },
   { href: '/wallet', label: 'Billetera', icon: Wallet },
   { href: '/transactions', label: 'Actividad', icon: ArrowRightLeft },
-  { href: '/ai-analysis', label: 'Análisis IA', icon: BrainCircuit },
 ];
 
 const adminNavItems = [
@@ -49,7 +47,7 @@ export default function Sidebar() {
     <aside className="hidden md:flex flex-col w-64 bg-background border-r border-white/10 p-4 space-y-8">
       <div className="flex items-center gap-2 px-2">
         <ViltrumLogo className="w-8 h-8 text-primary" />
-        <h1 className="text-xl font-bold font-headline text-glow">Viltrum Zone</h1>
+        <h1 className="text-xl font-bold font-headline text-glow">Viltrum Wallet</h1>
       </div>
       
       <nav className="flex-1">

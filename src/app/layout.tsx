@@ -4,7 +4,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/hooks/use-auth';
 
 export const metadata: Metadata = {
-  title: 'Viltrum Zone',
+  title: 'Viltrum Wallet',
   description: 'Una billetera de criptomonedas moderna con un estilo futurista y neón.',
 };
 

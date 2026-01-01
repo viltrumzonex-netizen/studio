@@ -20,43 +20,65 @@ export function ViltrumLogo(props: SVGProps<SVGSVGElement>) {
           <stop stopColor="#A855F7" />
           <stop offset="1" stopColor="#3B82F6" />
         </linearGradient>
-        <linearGradient
-          id="viltrum-bars-gradient"
-          x1="128"
-          y1="64"
-          x2="128"
-          y2="192"
-          gradientUnits="userSpaceOnUse"
-        >
-          <stop stopColor="#EC4899" />
-          <stop offset="1" stopColor="#A855F7" />
-        </linearGradient>
       </defs>
-      <circle
-        cx="128"
-        cy="128"
-        r="114"
+      <path
+        d="M93.333 116L128 92L162.667 116V164L128 188L93.333 164V116Z"
         stroke="url(#viltrum-gradient)"
-        strokeWidth="20"
+        strokeWidth="12"
       />
       <path
-        fill="url(#viltrum-bars-gradient)"
-        d="M93.5 176.5L118 192V64L93.5 79.5V176.5Z"
+        d="M128 92L68 68L93.3333 116"
+        stroke="url(#viltrum-gradient)"
+        strokeWidth="12"
       />
       <path
-        fill="url(#viltrum-bars-gradient)"
-        d="M125 192H141V64H125V192Z"
+        d="M128 92L188 68L162.667 116"
+        stroke="url(#viltrum-gradient)"
+        strokeWidth="12"
       />
-      <path
-        fill="url(#viltrum-bars-gradient)"
-        d="M162.5 152L171 156.5V99.5L162.5 104V152Z"
+       <path
+        d="M93.333 164L68 188L128 188"
+        stroke="url(#viltrum-gradient)"
+        strokeWidth="12"
+      />
+       <path
+        d="M162.667 164L188 188L128 188"
+        stroke="url(#viltrum-gradient)"
+        strokeWidth="12"
       />
     </svg>
   );
 }
 
+
 export function ViltrumCoin(props: SVGProps<SVGSVGElement>) {
-  return <ViltrumLogo {...props} />;
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 256 256"
+      fill="none"
+    >
+      <defs>
+        <linearGradient
+          id="coin-gradient"
+          x1="0"
+          y1="0"
+          x2="256"
+          y2="256"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop stopColor="#A855F7" />
+          <stop offset="1" stopColor="#3B82F6" />
+        </linearGradient>
+      </defs>
+      <circle cx="128" cy="128" r="110" fill="url(#coin-gradient)" />
+      <circle cx="128" cy="128" r="118" stroke="url(#coin-gradient)" strokeOpacity="0.5" strokeWidth="20" />
+      <path d="M102 96L116 88V168L102 160V96Z" fill="white" fillOpacity="0.8"/>
+      <path d="M119 88H137V168H119V88Z" fill="white" fillOpacity="0.8"/>
+      <path d="M140 104L154 96V160L140 168V104Z" fill="white" fillOpacity="0.8"/>
+    </svg>
+  );
 }
 
 export function Bitcoin(props: SVGProps<SVGSVGElement>) {

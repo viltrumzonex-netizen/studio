@@ -1,4 +1,4 @@
-import { ViltrumLogo, Ethereum, UsdCoin } from '@/components/icons';
+import { ViltrumCoin, Ethereum, UsdCoin } from '@/components/icons';
 
 export type Coin = {
     id: string;
@@ -16,24 +16,8 @@ export const walletCoins: Coin[] = [
         symbol: 'VTC',
         amount: 250,
         usdValue: 250,
-        icon: ViltrumLogo,
+        icon: ViltrumCoin,
     },
-    {
-        id: 'ethereum',
-        name: 'Ethereum',
-        symbol: 'ETH',
-        amount: 0.05,
-        usdValue: 150,
-        icon: Ethereum,
-    },
-    {
-        id: 'usd-coin',
-        name: 'USD Coin',
-        symbol: 'USDC',
-        amount: 50,
-        usdValue: 50,
-        icon: UsdCoin,
-    }
 ];
 
 export type Transaction = {
@@ -60,9 +44,9 @@ export const transactions: Transaction[] = [
     {
         id: '2',
         type: 'received',
-        coin: walletCoins[1], // Ethereum
-        amount: 0.05,
-        usdValue: 150,
+        coin: walletCoins[0], // Viltrum Coin
+        amount: 100,
+        usdValue: 100,
         date: new Date('2024-05-20T10:00:00Z'),
         address: '0x123...abc'
     },
@@ -77,12 +61,12 @@ export const transactions: Transaction[] = [
     },
     {
         id: '4',
-        type: 'received',
-        coin: walletCoins[2], // USDC
+        type: 'top-up',
+        coin: walletCoins[0], 
         amount: 50,
         usdValue: 50,
         date: new Date('2024-05-18T09:00:00Z'),
-        address: '0x456...def'
+        from: 'Admin'
     },
 ];
 

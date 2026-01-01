@@ -2,14 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Wallet, ArrowRightLeft, BrainCircuit } from 'lucide-react';
+import { LayoutDashboard, Wallet, ArrowRightLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/dashboard', label: 'Panel', icon: LayoutDashboard },
   { href: '/wallet', label: 'Billetera', icon: Wallet },
   { href: '/transactions', label: 'Actividad', icon: ArrowRightLeft },
-  { href: '/ai-analysis', label: 'IA', icon: BrainCircuit },
 ];
 
 export default function BottomNav() {
