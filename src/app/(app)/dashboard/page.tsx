@@ -39,7 +39,6 @@ export default function DashboardPage() {
                                 const isSent = tx.type === 'sent';
                                 const isTopUp = tx.type === 'top-up';
                                 const iconColor = isSent ? "text-accent" : "text-primary";
-                                const iconBg = isSent ? "bg-accent/20" : "bg-primary/20";
                                 const sign = isSent ? '-' : '+';
                                 
                                 let title = '';
@@ -56,8 +55,8 @@ export default function DashboardPage() {
                                 return (
                                     <li key={tx.id} className="flex items-center justify-between">
                                         <div className="flex items-center gap-4">
-                                            <div className={cn("flex items-center justify-center w-10 h-10 rounded-full", iconBg)}>
-                                                {isTopUp ? <PlusCircle className={cn("w-5 h-5", iconColor)} /> : <Image src={tx.coin.iconUrl} alt={tx.coin.name} width={20} height={20} /> }
+                                            <div className={"flex items-center justify-center w-12 h-12"}>
+                                                {isTopUp ? <PlusCircle className={cn("w-6 h-6", iconColor)} /> : <Image src={tx.coin.iconUrl} alt={tx.coin.name} width={32} height={32} /> }
                                             </div>
                                             <div>
                                                 <p className="font-semibold capitalize">{title}</p>
@@ -69,7 +68,7 @@ export default function DashboardPage() {
                                                 {sign} {tx.amount} {tx.coin.symbol}
                                             </p>
                                             <p className="text-sm text-muted-foreground">
-                                                ${tx.usdValue.toLocaleString('en-US')}
+                                                ~{(tx.amount * useSettings().exchangeRate).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} VES
                                             </p>
                                         </div>
                                     </li>
