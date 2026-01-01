@@ -4,7 +4,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/hooks/use-auth';
 
 export const metadata: Metadata = {
-  title: 'NeonWallet',
+  title: 'Viltrum Zone',
   description: 'A modern crypto wallet with a futuristic, neon style.',
 };
 

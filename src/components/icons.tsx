@@ -1,6 +1,6 @@
 import type { SVGProps } from 'react';
 
-export function NeonWalletLogo(props: SVGProps<SVGSVGElement>) {
+export function ViltrumCoin(props: SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}
@@ -8,20 +8,22 @@ export function NeonWalletLogo(props: SVGProps<SVGSVGElement>) {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
+      strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
     >
       <defs>
-        <linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id="viltrum-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" style={{ stopColor: 'hsl(var(--primary))', stopOpacity: 1 }} />
-          <stop offset="100%" style={{ stopColor: 'hsl(var(--accent))', stopOpacity: 1 }} />
+          <stop offset="100%" style={{ stopColor: 'hsl(var(--secondary))', stopOpacity: 1 }} />
         </linearGradient>
       </defs>
-      <path d="M4 12.5l2.5-2.5 4 4 5-5-2.5-2.5" stroke="url(#logo-gradient)" />
-      <path d="M15 4.5l5 5" stroke="url(#logo-gradient)" />
-      <path d="M17 3l3 3" stroke="url(#logo-gradient)" />
-      <path d="M22 12c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2" stroke="url(#logo-gradient)"/>
+      <circle cx="12" cy="12" r="10" stroke="url(#viltrum-gradient)" />
+      <path
+        d="M9.6 8.5 12 7l2.4 1.5-1.2 4 1.2 4L12 17l-2.4-1.5 1.2-4z"
+        stroke="url(#viltrum-gradient)"
+        strokeWidth="2"
+      />
     </svg>
   );
 }

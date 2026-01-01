@@ -9,9 +9,10 @@ import {
   BrainCircuit,
   LogOut,
   Settings,
+  ShieldCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { NeonWalletLogo } from '@/components/icons';
+import { ViltrumCoin } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -24,11 +25,15 @@ const navItems = [
   { href: '/ai-analysis', label: 'AI Analysis', icon: BrainCircuit },
 ];
 
+const adminNavItems = [
+    { href: '/admin', label: 'Admin', icon: ShieldCheck },
+]
+
 export default function Sidebar() {
   const pathname = usePathname();
   const { toast } = useToast();
   const router = useRouter();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
 
   const handleSignOut = async () => {
     try {
@@ -43,11 +48,12 @@ export default function Sidebar() {
   return (
     <aside className="hidden md:flex flex-col w-64 bg-background border-r border-white/10 p-4 space-y-8">
       <div className="flex items-center gap-2 px-2">
-        <NeonWalletLogo className="w-8 h-8 text-primary" />
-        <h1 className="text-xl font-bold font-headline text-glow">NeonWallet</h1>
+        <ViltrumCoin className="w-8 h-8 text-primary" />
+        <h1 className="text-xl font-bold font-headline text-glow">Viltrum Zone</h1>
       </div>
       
       <nav className="flex-1">
+        <p className="px-3 py-2 text-xs font-semibold text-muted-foreground/50">MENU</p>
         <ul className="space-y-2">
           {navItems.map((item) => {
             const isActive = pathname.startsWith(item.href);
@@ -67,6 +73,33 @@ export default function Sidebar() {
             );
           })}
         </ul>
+        
+        {/* For now, show admin link to any logged in user */}
+        {user && (
+             <div className="mt-8">
+                <p className="px-3 py-2 text-xs font-semibold text-muted-foreground/50">ADMIN</p>
+                 <ul className="space-y-2">
+                    {adminNavItems.map((item) => {
+                        const isActive = pathname.startsWith(item.href);
+                        return (
+                        <li key={item.href}>
+                            <Link
+                            href={item.href}
+                            className={cn(
+                                'flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-muted-foreground hover:bg-primary/10 hover:text-primary',
+                                isActive && 'bg-primary/20 text-primary font-semibold'
+                            )}
+                            >
+                            <item.icon className="w-5 h-5" />
+                            <span>{item.label}</span>
+                            </Link>
+                        </li>
+                        );
+                    })}
+                </ul>
+            </div>
+        )}
+
       </nav>
 
       <div>

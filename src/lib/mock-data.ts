@@ -1,4 +1,4 @@
-import { Bitcoin, Ethereum, UsdCoin } from '@/components/icons';
+import { ViltrumCoin, Ethereum, UsdCoin } from '@/components/icons';
 
 export type Coin = {
     id: string;
@@ -11,12 +11,12 @@ export type Coin = {
 
 export const walletCoins: Coin[] = [
     {
-        id: 'bitcoin',
-        name: 'Bitcoin',
-        symbol: 'BTC',
-        amount: 0.5,
-        usdValue: 35000,
-        icon: Bitcoin,
+        id: 'viltrum-coin',
+        name: 'Viltrum Coin',
+        symbol: 'VTC',
+        amount: 25000,
+        usdValue: 25000,
+        icon: ViltrumCoin,
     },
     {
         id: 'ethereum',
@@ -38,17 +38,27 @@ export const walletCoins: Coin[] = [
 
 export type Transaction = {
     id: string;
-    type: 'sent' | 'received';
+    type: 'sent' | 'received' | 'top-up';
     coin: Coin;
     amount: number;
     usdValue: number;
     date: Date;
-    address: string;
+    address?: string;
+    from?: string;
 }
 
 export const transactions: Transaction[] = [
     {
         id: '1',
+        type: 'top-up',
+        coin: walletCoins[0], // Viltrum Coin
+        amount: 100,
+        usdValue: 100,
+        date: new Date('2024-05-21T11:00:00Z'),
+        from: 'Admin'
+    },
+    {
+        id: '2',
         type: 'received',
         coin: walletCoins[1], // Ethereum
         amount: 2,
@@ -57,16 +67,16 @@ export const transactions: Transaction[] = [
         address: '0x123...abc'
     },
     {
-        id: '2',
+        id: '3',
         type: 'sent',
-        coin: walletCoins[0], // Bitcoin
-        amount: 0.1,
-        usdValue: 7000,
+        coin: walletCoins[0], // Viltrum Coin
+        amount: 50,
+        usdValue: 50,
         date: new Date('2024-05-19T15:30:00Z'),
-        address: 'bc1q...xyz'
+        address: 'vtc1q...xyz'
     },
     {
-        id: '3',
+        id: '4',
         type: 'received',
         coin: walletCoins[2], // USDC
         amount: 500,
