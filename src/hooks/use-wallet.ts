@@ -95,9 +95,9 @@ export const useWallet = () => {
 
   useEffect(() => {
     setHydrated(true);
-    // Fetch data when component mounts, user object might not be available immediately
+    // Fetch data when the user object becomes available or changes.
     fetchWalletData();
-  }, [user, fetchWalletData]);
+  }, [user?.uid, fetchWalletData]);
 
   // Expose a manual refresh function
   const refreshWallet = useCallback(() => {
