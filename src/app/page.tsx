@@ -4,7 +4,6 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import AuthForm from '@/components/auth/auth-form';
-import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 
 export default function LoginPage() {
@@ -21,15 +20,19 @@ export default function LoginPage() {
     // Render a loading state while checking auth and redirecting
     return (
         <div className="flex min-h-screen flex-col items-center justify-center p-4 bg-background">
-            <div className="w-full max-w-md space-y-6">
-                <div className="flex justify-center">
-                    <Image src="/viltrum-logo-2.png" alt="Viltrum Wallet Logo" width={96} height={96} className="animate-pulse" priority />
+            <div className="w-full max-w-md space-y-6 flex flex-col items-center">
+                 <div className="relative flex items-center justify-center">
+                    <div className="absolute h-32 w-32 bg-primary/30 rounded-full blur-2xl animate-pulse"></div>
+                    <Image 
+                        src="/viltrum-logo-2.png" 
+                        alt="Viltrum Wallet Logo" 
+                        width={96} 
+                        height={96} 
+                        className="relative z-10" 
+                        priority 
+                    />
                 </div>
-                <div className="space-y-4">
-                    <Skeleton className="h-10 w-full" />
-                    <Skeleton className="h-10 w-full" />
-                    <Skeleton className="h-12 w-full mt-4" />
-                </div>
+                <p className="text-muted-foreground animate-pulse">Autenticando...</p>
             </div>
         </div>
     );

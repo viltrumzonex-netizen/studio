@@ -78,7 +78,7 @@ export default function Sidebar() {
           })}
         </ul>
         
-        {user && (
+        {user?.role === 'admin' && (
              <div className="mt-8">
                 <p className="px-3 py-2 text-xs font-semibold text-muted-foreground/50">ADMIN</p>
                  <ul className="space-y-2">

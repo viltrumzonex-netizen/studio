@@ -7,6 +7,7 @@ const MOCK_USER = {
   uid: 'demo-user-id-12345',
   email: 'usuario@ejemplo.com',
   displayName: 'Usuario Demo',
+  role: 'admin', // admin, staff, user
 };
 
 
@@ -37,7 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email?: string, password?: string) => {
     setLoading(true);
     // For demo purposes, we'll just simulate a successful login.
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 1500)); // Increased delay for better loading feel
     setUser(MOCK_USER);
     setLoading(false);
   };
