@@ -70,7 +70,7 @@ const rechargeSchema = z.object({
         z.number().positive({ message: "El monto debe ser mayor a 0." })
     ),
     reference: z.string().min(4, { message: "La referencia es muy corta." }),
-    method: z.enum(['Pago Móvil', 'Zinli', 'Binance'], { required_error: "Debes seleccionar un método de pago." }),
+    method: z.enum(['Pago Móvil', 'Zinli', 'Binance Pay'], { required_error: "Debes seleccionar un método de pago." }),
 });
 
 
@@ -182,7 +182,7 @@ export default function RechargeDialog() {
                                     <SelectContent>
                                     <SelectItem value="Pago Móvil">Pago Móvil</SelectItem>
                                     <SelectItem value="Zinli">Zinli</SelectItem>
-                                    <SelectItem value="Binance">Binance Pay</SelectItem>
+                                    <SelectItem value="Binance Pay">Binance Pay</SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <FormMessage />
