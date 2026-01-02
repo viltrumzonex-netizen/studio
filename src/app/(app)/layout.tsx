@@ -16,11 +16,13 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const loading = authLoading || walletLoading;
 
   useEffect(() => {
+    // If authentication is done and there's NO user, redirect to login page.
     if (!authLoading && !user) {
       router.push('/');
     }
   }, [authLoading, user, router]);
 
+  // If we are loading OR there is no user (and we are about to redirect), show the loader.
   if (loading || !user) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
@@ -44,6 +46,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     );
   }
 
+  // If loading is finished AND we have a user, render the app layout.
   return (
     <div className="flex min-h-screen bg-background">
         <Sidebar />

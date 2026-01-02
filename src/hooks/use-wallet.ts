@@ -11,88 +11,105 @@ interface WalletState {
   circulatingSupply: number;
   exchangeRate: number;
   loading: boolean;
-  actions: {
-    fetchWalletData: (userId: string | undefined) => Promise<void>;
-  };
+  fetchWalletData: (userId: string) => Promise<void>;
+  reset: () => void;
 }
 
-const useWalletStore = create<WalletState>()((set, get) => ({
+const useWalletStore = create<WalletState>((set) => ({
   balance: 0,
   transactions: [],
   circulatingSupply: 0,
   exchangeRate: 36.5, // Default/initial value
   loading: true,
-  actions: {
-    fetchWalletData: async (userId) => {
-        set({ loading: true });
-        try {
-          const fetchPromises = [];
+  fetchWalletData: async (userId: string) => {
+    set({ loading: true });
+    try {
+      if (!userId) {
+        // If no user, reset user-specific state and stop loading
+        set({ balance: 0, transactions: [], loading: false });
+        return;
+      }
+      
+      const [walletRes, settingsRes, supplyRes] = await Promise.all([
+        fetch(`/api/wallet/balance?userId=${userId}`),
+        fetch('/api/settings'),
+        fetch('/api/wallet/supply')
+      ]);
 
-          // Fetch user-specific data only if userId is available
-          if (userId) {
-            fetchPromises.push(
-              fetch(`/api/wallet/balance?userId=${userId}`).then(res => res.json())
-            );
-          } else {
-            // Push a placeholder promise that resolves to null
-             fetchPromises.push(Promise.resolve(null));
-          }
-          
-          // Fetch global data
-          fetchPromises.push(fetch('/api/settings').then(res => res.json()));
-          fetchPromises.push(fetch('/api/wallet/supply').then(res => res.json()));
-          
-          const [walletData, settingsData, supplyData] = await Promise.all(fetchPromises);
+      const walletData = await walletRes.json();
+      const settingsData = await settingsRes.json();
+      const supplyData = await supplyRes.json();
+      
+      const newState: Partial<WalletState> = {};
 
-          const newState: Partial<WalletState> = {};
+      if (walletRes.ok) {
+        newState.balance = walletData.balance;
+        newState.transactions = walletData.transactions;
+      } else {
+        // Reset user-specific state on error
+        newState.balance = 0;
+        newState.transactions = [];
+      }
 
-          if (walletData) {
-            newState.balance = walletData.balance;
-            newState.transactions = walletData.transactions;
-          } else {
-            // If no user, reset user-specific state
-            newState.balance = 0;
-            newState.transactions = [];
-          }
-
-          if (settingsData) {
-            const rateSetting = settingsData.find((s: any) => s.setting_key === 'exchange_rate');
-            if (rateSetting) {
-              newState.exchangeRate = parseFloat(rateSetting.setting_value);
-            }
-          }
-
-          if (supplyData) {
-            newState.circulatingSupply = supplyData.circulatingSupply;
-          }
-
-          set(newState);
-
-        } catch (error) {
-            console.error("Failed to fetch wallet data:", error);
-        } finally {
-            set({ loading: false });
+      if (settingsRes.ok) {
+        const rateSetting = settingsData.find((s: any) => s.setting_key === 'exchange_rate');
+        if (rateSetting) {
+          newState.exchangeRate = parseFloat(rateSetting.setting_value);
         }
+      }
+
+      if (supplyRes.ok) {
+        newState.circulatingSupply = supplyData.circulatingSupply;
+      }
+
+      set(newState);
+
+    } catch (error) {
+      console.error("Failed to fetch wallet data:", error);
+      set({ balance: 0, transactions: [] }); // Reset on error
+    } finally {
+      set({ loading: false });
     }
-  }
+  },
+  reset: () => set({ balance: 0, transactions: [], loading: true }),
 }));
 
 // Custom hook to connect the store to React's lifecycle
 export const useWallet = () => {
-  const { user } = useAuth();
-  const state = useWalletStore();
-  const { fetchWalletData } = useWalletStore((s) => s.actions);
+  const { user, loading: authLoading } = useAuth();
+  const {
+    balance,
+    transactions,
+    circulatingSupply,
+    exchangeRate,
+    loading: walletLoading,
+    fetchWalletData,
+    reset,
+  } = useWalletStore();
 
   useEffect(() => {
-    // Fetch data when the component mounts and when the user's ID changes.
-    // The fetch action itself is defined in the store.
-    fetchWalletData(user?.uid);
-  }, [user?.uid, fetchWalletData]);
+    // If auth is done loading...
+    if (!authLoading) {
+      // And we have a user...
+      if (user?.uid) {
+        // ...fetch their data.
+        fetchWalletData(user.uid);
+      } else {
+        // Otherwise, if there is no user, reset the wallet state.
+        reset();
+      }
+    }
+  }, [user?.uid, authLoading, fetchWalletData, reset]);
 
-  // A manual refresh function that can be called from components
+  // The refresh function can be called manually from components
   const refreshWallet = useCallback(() => {
-    fetchWalletData(user?.uid);
+    if (user?.uid) {
+      fetchWalletData(user.uid);
+    }
   }, [user?.uid, fetchWalletData]);
 
-  return { ...state, refreshWallet };
+  // Consolidate loading state. The wallet is loading if auth is loading OR the wallet itself is loading.
+  const loading = authLoading || walletLoading;
+
+  return { balance, transactions, circulatingSupply, exchangeRate, loading, refreshWallet };
 };
