@@ -1,130 +1,145 @@
--- Base de Datos para Viltrum Wallet App
--- Versión: 1.1
--- Descripción: Script completo para crear todas las tablas necesarias.
+-- SQLBook: Code
+-- Active: 1717789997108@@127.0.0.1@3306@viltrum
 
-SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
-START TRANSACTION;
-SET time_zone = "+00:00";
+-- =================================================================
+--  VILTRUM WALLET DATABASE SCHEMA
+-- =================================================================
+-- This script will completely reset the database schema.
+-- It is designed to be run multiple times without causing errors.
+-- =================================================================
 
---
--- Estructura de la tabla `users`
---
-DROP TABLE IF EXISTS `users`;
-CREATE TABLE IF NOT EXISTS `users` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `email` varchar(255) NOT NULL,
-  `password` varchar(255) NOT NULL,
-  `displayName` varchar(255) NOT NULL,
-  `vtc_balance` decimal(15,4) NOT NULL DEFAULT 0.0000,
-  `role` enum('user','admin') NOT NULL DEFAULT 'user',
-  `createdAt` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `email` (`email`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+-- Temporarily disable foreign key checks to allow dropping tables in any order without errors.
+SET FOREIGN_KEY_CHECKS = 0;
 
---
--- Estructura de la tabla `system_wallet` (El Banco Central)
---
-DROP TABLE IF EXISTS `system_wallet`;
-CREATE TABLE IF NOT EXISTS `system_wallet` (
-  `currency_symbol` varchar(10) NOT NULL,
-  `total_supply` decimal(20,4) NOT NULL,
-  `uncirculated_balance` decimal(20,4) NOT NULL,
-  PRIMARY KEY (`currency_symbol`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Volcado de datos para la tabla `system_wallet`
---
-DELETE FROM `system_wallet`;
-INSERT INTO `system_wallet` (`currency_symbol`, `total_supply`, `uncirculated_balance`) VALUES
-('VTC', 500000.0000, 500000.0000);
-
---
--- Estructura de la tabla `recharge_requests`
---
-DROP TABLE IF EXISTS `recharge_requests`;
-CREATE TABLE IF NOT EXISTS `recharge_requests` (
-  `id` varchar(36) NOT NULL,
-  `userId` int(11) NOT NULL,
-  `amountBs` decimal(15,2) NOT NULL,
-  `method` enum('Pago Móvil','Zinli','Binance') NOT NULL,
-  `reference` varchar(255) NOT NULL,
-  `status` enum('pending','approved','denied') NOT NULL DEFAULT 'pending',
-  `createdAt` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`),
-  KEY `userId_recharge` (`userId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Estructura de la tabla `store_items`
---
-DROP TABLE IF EXISTS `store_items`;
-CREATE TABLE IF NOT EXISTS `store_items` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(255) NOT NULL,
-  `description` text NOT NULL,
-  `price` decimal(15,2) NOT NULL,
-  `stock` int(11) NOT NULL DEFAULT 0,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Volcado de datos para la tabla `store_items`
---
-DELETE FROM `store_items`;
-INSERT INTO `store_items` (`id`, `name`, `description`, `price`, `stock`) VALUES
-(1, 'Créditos para la Plataforma', 'Un paquete de 50 créditos para usar en servicios dentro de la plataforma.', 10.00, 100),
-(2, 'Suscripción Premium (1 Mes)', 'Acceso a todas las funciones premium de la aplicación durante un mes.', 25.00, 50),
-(3, 'Avatar Exclusivo', 'Obtén un avatar único y exclusivo para tu perfil que nadie más tiene.', 5.00, 200);
-
---
--- Estructura de la tabla `transactions`
---
+-- Drop tables if they exist, starting with tables that have foreign keys.
 DROP TABLE IF EXISTS `transactions`;
-CREATE TABLE IF NOT EXISTS `transactions` (
-  `id` varchar(36) NOT NULL,
-  `userId` int(11) NOT NULL,
-  `type` enum('top-up','expense') NOT NULL,
-  `amount_vtc` decimal(15,4) NOT NULL,
-  `description` varchar(255) DEFAULT NULL,
-  `createdAt` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`),
-  KEY `userId_transaction` (`userId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Estructura de la tabla `settings`
---
+DROP TABLE IF EXISTS `recharge_requests`;
+DROP TABLE IF EXISTS `store_items`;
+DROP TABLE IF EXISTS `users`;
+DROP TABLE IF EXISTS `system_wallet`;
 DROP TABLE IF EXISTS `settings`;
-CREATE TABLE IF NOT EXISTS `settings` (
-  `setting_key` varchar(50) NOT NULL,
-  `setting_value` varchar(255) NOT NULL,
-  PRIMARY KEY (`setting_key`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Volcado de datos para la tabla `settings`
---
-DELETE FROM `settings`;
-INSERT INTO `settings` (`setting_key`, `setting_value`) VALUES
-('exchange_rate', '36.50');
 
 
---
--- Restricciones para tablas volcadas
---
+-- =================================================================
+--  TABLE CREATION
+-- =================================================================
 
---
--- Filtros para la tabla `recharge_requests`
---
-ALTER TABLE `recharge_requests`
-  ADD CONSTRAINT `userId_recharge` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+-- Users Table: Stores user information, balance, and role.
+CREATE TABLE
+    `users` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `email` VARCHAR(255) NOT NULL UNIQUE,
+        `password` VARCHAR(255) NOT NULL,
+        `displayName` VARCHAR(50) NOT NULL,
+        `vtc_balance` DECIMAL(15, 4) NOT NULL DEFAULT 0.0000,
+        `role` ENUM('user', 'admin') NOT NULL DEFAULT 'user',
+        `createdAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE = InnoDB;
 
---
--- Filtros para la tabla `transactions`
---
-ALTER TABLE `transactions`
-  ADD CONSTRAINT `userId_transaction` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+-- System Wallet Table: Acts as the central bank for the application's currency.
+CREATE TABLE
+    `system_wallet` (
+        `currency_symbol` VARCHAR(10) PRIMARY KEY,
+        `total_supply` DECIMAL(20, 4) NOT NULL,
+        `uncirculated_balance` DECIMAL(20, 4) NOT NULL
+    ) ENGINE = InnoDB;
 
-COMMIT;
+-- Recharge Requests Table: Tracks user requests to top-up their balance.
+CREATE TABLE
+    `recharge_requests` (
+        `id` VARCHAR(36) PRIMARY KEY,
+        `userId` INT NOT NULL,
+        `amountBs` DECIMAL(15, 2) NOT NULL,
+        `method` VARCHAR(50) NOT NULL,
+        `reference` VARCHAR(255) NOT NULL,
+        `status` ENUM('pending', 'approved', 'denied') NOT NULL DEFAULT 'pending',
+        `createdAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        `updatedAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (`userId`) REFERENCES `users` (`id`)
+    ) ENGINE = InnoDB;
+
+-- Store Items Table: Contains products available for purchase with VTC.
+CREATE TABLE
+    `store_items` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `name` VARCHAR(255) NOT NULL,
+        `description` TEXT,
+        `price` DECIMAL(15, 4) NOT NULL,
+        `stock` INT NOT NULL DEFAULT 0
+    ) ENGINE = InnoDB;
+
+-- Transactions Table: Logs all movements of VTC for each user.
+CREATE TABLE
+    `transactions` (
+        `id` VARCHAR(36) PRIMARY KEY,
+        `userId` INT NOT NULL,
+        `type` ENUM('top-up', 'expense') NOT NULL,
+        `amount_vtc` DECIMAL(15, 4) NOT NULL,
+        `description` VARCHAR(255),
+        `createdAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (`userId`) REFERENCES `users` (`id`)
+    ) ENGINE = InnoDB;
+
+-- Settings Table: For application-wide settings like the exchange rate.
+CREATE TABLE
+    `settings` (
+        `setting_key` VARCHAR(50) PRIMARY KEY,
+        `setting_value` VARCHAR(255) NOT NULL
+    ) ENGINE = InnoDB;
+
+
+-- Re-enable foreign key checks after schema creation is complete.
+SET FOREIGN_KEY_CHECKS = 1;
+
+
+-- =================================================================
+--  INITIAL DATA SEEDING
+-- =================================================================
+
+-- Initialize the system wallet (the bank) with the total supply of VTC.
+INSERT INTO
+    `system_wallet` (
+        `currency_symbol`,
+        `total_supply`,
+        `uncirculated_balance`
+    )
+VALUES
+    ('VTC', 500000.0000, 500000.0000);
+
+-- Insert some default items into the store.
+INSERT INTO
+    `store_items` (
+        `id`,
+        `name`,
+        `description`,
+        `price`,
+        `stock`
+    )
+VALUES
+    (
+        1,
+        'Créditos para la Plataforma',
+        'Un paquete de 50 créditos para usar en servicios dentro de la app.',
+        50.0000,
+        1000
+    ),
+    (
+        2,
+        'Suscripción Premium (1 Mes)',
+        'Acceso a todas las funciones premium de la plataforma durante 30 días.',
+        100.0000,
+        500
+    ),
+    (
+        3,
+        'Avatar Exclusivo',
+        'Obtén un avatar único para tu perfil que te diferenciará del resto.',
+        25.0000,
+        2000
+    );
+
+-- Insert a default exchange rate into the settings table.
+INSERT INTO
+    `settings` (`setting_key`, `setting_value`)
+VALUES
+    ('exchange_rate', '36.50');
