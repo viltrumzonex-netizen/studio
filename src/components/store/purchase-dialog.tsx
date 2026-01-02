@@ -16,30 +16,18 @@ import { ShoppingBag } from "lucide-react";
 import { useWallet } from "@/hooks/use-wallet";
 import { useToast } from "@/hooks/use-toast";
 import type { StoreItem } from "@/lib/types";
-import { useAuth } from "@/hooks/use-auth";
 
 interface PurchaseDialogProps {
     item: StoreItem;
     userBalance: number;
 }
 
-
 export default function PurchaseDialog({ item, userBalance }: PurchaseDialogProps) {
-    const { user } = useAuth();
     const { refreshWallet } = useWallet();
     const { toast } = useToast();
     const canAfford = userBalance >= item.price;
     
     const handlePurchase = async () => {
-        if (!user) {
-             toast({
-                variant: "destructive",
-                title: "Error",
-                description: `Debes iniciar sesión para hacer un canje.`,
-            });
-            return;
-        }
-
         if (!canAfford) {
             toast({
                 variant: "destructive",
@@ -53,9 +41,9 @@ export default function PurchaseDialog({ item, userBalance }: PurchaseDialogProp
             const response = await fetch('/api/store/purchase', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                // We send the user ID from the client-side hook state.
-                // In a real high-security app, this would come from a server-side session token.
-                body: JSON.stringify({ itemId: item.id, userId: user.uid })
+                // The user ID is no longer sent from the client.
+                // The backend gets it securely from the session cookie.
+                body: JSON.stringify({ itemId: item.id })
             });
 
             const data = await response.json();

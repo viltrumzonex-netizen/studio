@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import { getServerSession } from '@/lib/session';
 
 export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId');
-
-    if (!userId) {
-      return NextResponse.json({ message: 'User ID es requerido.' }, { status: 400 });
+    const session = await getServerSession(req);
+    if (!session) {
+      return NextResponse.json({ message: 'No autenticado.' }, { status: 401 });
     }
+    
+    const userId = session.uid;
 
     // Get user balance
     const [userResult]: any = await query(

@@ -40,7 +40,6 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Copy, PlusCircle } from "lucide-react";
 import { useWallet } from '@/hooks/use-wallet';
-import { useAuth } from '@/hooks/use-auth';
 
 const paymentMethods = [
     {
@@ -78,7 +77,6 @@ const rechargeSchema = z.object({
 export default function RechargeDialog() {
   const { toast } = useToast();
   const { exchangeRate } = useWallet();
-  const { user } = useAuth();
   const [open, setOpen] = useState(false);
 
   const form = useForm<z.infer<typeof rechargeSchema>>({
@@ -95,16 +93,13 @@ export default function RechargeDialog() {
   };
 
   const onSubmit = async (values: z.infer<typeof rechargeSchema>) => {
-    if (!user) {
-        toast({ variant: 'destructive', title: "Error", description: "Debes iniciar sesión para recargar." });
-        return;
-    }
-
     try {
         const response = await fetch('/api/recharges', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ...values, userId: user.uid }),
+            // The user ID is no longer sent from the client.
+            // The backend gets it securely from the session cookie.
+            body: JSON.stringify(values),
         });
 
         const data = await response.json();

@@ -1,20 +1,25 @@
 import { NextRequest } from 'next/server';
-import { query } from './db';
 import { User } from '@/hooks/use-auth';
 
-// This is a placeholder for a real session management library like next-auth or iron-session.
-// For security in a real app, you would decode a JWT or encrypted session cookie.
+/**
+ * Gets the server session from the request cookies.
+ * This is the single source of truth for user authentication on the backend.
+ * @param req - The Next.js request object.
+ * @returns A promise that resolves to the user object or null if not authenticated.
+ */
+export async function getServerSession(req: NextRequest): Promise<User | null> {
+    const sessionCookie = req.cookies.get('viltrum_session');
 
-// For now, this function is NOT USED by the frontend. The frontend sends the user ID
-// from the client-side useAuth hook's state. This is for backend/server-side validation if needed.
-// The purchase endpoint has been updated to reflect this temporary state.
-export async function getServerSession(req: NextRequest): Promise<{ userId: string | null, user: User | null }> {
-    // In a real app, you'd get a token from headers:
-    // const token = req.headers.get('authorization')?.split('Bearer ')[1];
-    // if (!token) return { userId: null, user: null };
-    // And then verify the token to get the user ID.
-
-    // For this project, we'll continue to rely on the client sending its user ID.
-    // This function remains as a placeholder for a more secure session implementation.
-    return { userId: null, user: null };
+    if (!sessionCookie) {
+        return null;
+    }
+    try {
+        const user: User = JSON.parse(sessionCookie.value);
+        // In a real-world scenario, you might want to re-validate this user against the DB
+        // to ensure they still exist and their permissions are current. For this app, we'll trust the cookie.
+        return user;
+    } catch (e) {
+        // If the cookie is malformed or invalid JSON
+        return null;
+    }
 }

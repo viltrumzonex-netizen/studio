@@ -3,34 +3,17 @@ import pool from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
 import { getServerSession } from '@/lib/session';
 import type { PoolConnection } from 'mysql2/promise';
-import { User } from '@/hooks/use-auth';
-
-// This is a placeholder for a real session management library like next-auth or iron-session
-// For now, it will simulate getting a user ID from the request if sent for testing.
-async function getUserIdFromRequest(req: NextRequest): Promise<string | null> {
-    const sessionCookie = req.cookies.get('viltrum_session');
-
-    if (!sessionCookie) {
-        return null;
-    }
-    try {
-        const user: User = JSON.parse(sessionCookie.value);
-        return user.uid;
-    } catch (e) {
-        return null;
-    }
-}
-
 
 // POST /api/store/purchase - Purchase an item from the store
 export async function POST(req: NextRequest) {
   let connection: PoolConnection | null = null;
   
   try {
-    const userId = await getUserIdFromRequest(req);
-    if (!userId) {
+    const session = await getServerSession(req);
+    if (!session) {
         return NextResponse.json({ message: 'No autenticado.' }, { status: 401 });
     }
+    const userId = session.uid;
 
     const { itemId } = await req.json();
 
