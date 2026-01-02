@@ -63,6 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('viltrum_user', JSON.stringify(data.user));
 
     } catch (error: any) {
+      // Re-throw the error so the form can catch it
       throw error;
     } finally {
       setLoading(false);
@@ -88,6 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem('viltrum_user', JSON.stringify(data.user));
 
     } catch (error: any) {
+        // Re-throw the error so the form can catch it
         throw error;
     } finally {
         setLoading(false);
