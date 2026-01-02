@@ -15,7 +15,7 @@ import { TOTAL_SUPPLY } from "@/lib/constants";
 export default function DashboardPage() {
     const { user } = useAuth();
     const { transactions, circulatingSupply, exchangeRate } = useWallet();
-    const circulationPercentage = (circulatingSupply / TOTAL_SUPPLY) * 100;
+    const circulationPercentage = (Number(circulatingSupply) / TOTAL_SUPPLY) * 100;
     
     return (
         <div className="container mx-auto p-4 md:p-8 space-y-8">
@@ -62,7 +62,7 @@ export default function DashboardPage() {
                                 <PackageX className="h-5 w-5 text-muted-foreground"/>
                                 <h3 className="text-md font-semibold">Restantes</h3>
                             </div>
-                            <p className="text-2xl font-bold font-headline text-accent">{(TOTAL_SUPPLY - circulatingSupply).toLocaleString('de-DE')}</p>
+                            <p className="text-2xl font-bold font-headline text-accent">{(TOTAL_SUPPLY - Number(circulatingSupply)).toLocaleString('de-DE')}</p>
                         </div>
                     </div>
                 </CardContent>
@@ -75,7 +75,7 @@ export default function DashboardPage() {
                     </CardHeader>
                     <CardContent>
                         <ul className="space-y-4">
-                            {transactions.slice(0, 3).map(tx => {
+                            {(transactions || []).slice(0, 3).map(tx => {
                                 const isSent = tx.type === 'expense'; // Only expense is negative for now
                                 const isTopUp = tx.type === 'top-up';
                                 const iconColor = isSent ? "text-accent" : "text-primary";

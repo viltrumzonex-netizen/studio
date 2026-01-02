@@ -22,7 +22,7 @@ export default function TransactionsPage() {
             <Card className="glass-card rounded-lg">
                 <CardContent className="p-0">
                     <ul className="divide-y divide-white/10">
-                        {transactions.map(tx => {
+                        {(transactions || []).map(tx => {
                             const isExpense = tx.type === 'expense';
                             const isTopUp = tx.type === 'top-up';
                             
