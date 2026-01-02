@@ -32,40 +32,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    const checkUserSession = () => {
+    const checkUserSession = async () => {
       try {
-        const storedUser = localStorage.getItem('viltrum_user');
-        if (storedUser) {
-          setUser(JSON.parse(storedUser));
+        const response = await fetch('/api/auth/session');
+        if (response.ok) {
+          const { user } = await response.json();
+          if (user) {
+            setUser(user);
+          }
         }
       } catch (e) {
-        console.error("Failed to parse user from localStorage", e);
-        localStorage.removeItem('viltrum_user');
-        setUser(null);
+        console.error("Failed to fetch session", e);
       } finally {
         setLoading(false);
       }
     };
     
     checkUserSession();
-    
-    const handleStorageChange = (event: StorageEvent) => {
-        if (event.key === 'viltrum_user') {
-            setLoading(true);
-            checkUserSession();
-        }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => {
-        window.removeEventListener('storage', handleStorageChange);
-    };
   }, []);
 
 
   const handleAuthSuccess = useCallback((userData: User) => {
       setUser(userData);
-      localStorage.setItem('viltrum_user', JSON.stringify(userData));
       router.push('/dashboard'); 
   }, [router]);
 
@@ -106,7 +94,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error("Failed to call logout API", error);
     } finally {
         setUser(null);
-        localStorage.removeItem('viltrum_user');
         router.push('/');
     }
   };

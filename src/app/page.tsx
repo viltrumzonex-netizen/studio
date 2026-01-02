@@ -5,14 +5,19 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import AuthForm from '@/components/auth/auth-form';
 import Image from 'next/image';
-import { cn } from '@/lib/utils';
 
 export default function LoginPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
+  useEffect(() => {
+    if (!loading && user) {
+      router.push('/dashboard');
+    }
+  }, [user, loading, router]);
+
+
   // Show a loader while authentication is in progress.
-  // The middleware will handle redirection if the user is already logged in.
   if (loading) {
     return (
         <div className="flex min-h-screen flex-col items-center justify-center p-4 bg-background">

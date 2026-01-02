@@ -6,7 +6,7 @@ export async function POST() {
   const sessionCookie = serialize('viltrum_session', '', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    maxAge: -1, // Expire immediately
+    expires: new Date(0), // Set expiration to the past
     path: '/',
   });
 

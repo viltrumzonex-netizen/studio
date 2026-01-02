@@ -1,13 +1,12 @@
 'use client';
 
-import { type ReactNode } from 'react';
+import { type ReactNode, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import BottomNav from '@/components/shared/bottom-nav';
 import Sidebar from '@/components/shared/sidebar';
 import Image from 'next/image';
 import { useWallet } from '@/hooks/use-wallet';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useAuth();
