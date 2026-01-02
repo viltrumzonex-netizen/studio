@@ -38,7 +38,7 @@ export default function DashboardPage() {
                     <div className="space-y-2">
                         <div className="flex justify-between items-baseline">
                             <p className="text-muted-foreground">VTC en Circulación</p>
-                            <p className="font-bold font-headline text-lg">{circulatingSupply.toLocaleString('de-DE')} <span className="text-sm text-muted-foreground">/ {TOTAL_SUPPLY.toLocaleString('de-DE')} VTC</span></p>
+                            <p className="font-bold font-headline text-lg">{Number(circulatingSupply).toLocaleString('de-DE')} <span className="text-sm text-muted-foreground">/ {TOTAL_SUPPLY.toLocaleString('de-DE')} VTC</span></p>
                         </div>
                         <Progress value={circulationPercentage} className="h-2" />
                     </div>
@@ -55,7 +55,7 @@ export default function DashboardPage() {
                                 <PackageCheck className="h-5 w-5 text-muted-foreground"/>
                                 <h3 className="text-md font-semibold">En Circulación</h3>
                             </div>
-                            <p className="text-2xl font-bold font-headline text-primary">{circulatingSupply.toLocaleString('de-DE')}</p>
+                            <p className="text-2xl font-bold font-headline text-primary">{Number(circulatingSupply).toLocaleString('de-DE')}</p>
                         </div>
                         <div>
                            <div className="flex items-center justify-center gap-2">
