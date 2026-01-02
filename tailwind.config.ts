@@ -9,6 +9,12 @@ export default {
   ],
   theme: {
     extend: {
+      backgroundImage: {
+        'grid-pattern': "linear-gradient(to right, hsl(var(--primary) / 0.1) 1px, transparent 1px), linear-gradient(to bottom, hsl(var(--primary) / 0.1) 1px, transparent 1px)",
+      },
+      backgroundSize: {
+        'grid-pattern': "30px 30px",
+      },
       fontFamily: {
         body: ['"Space Grotesk"', 'sans-serif'],
         headline: ['"Space Grotesk"', 'sans-serif'],
@@ -88,12 +94,56 @@ export default {
             height: '0',
           },
         },
+        'spin-slow': {
+          '0%': { transform: 'rotate(0deg)' },
+          '100%': { transform: 'rotate(360deg)' },
+        },
+        'spin-slow-reverse': {
+          '0%': { transform: 'rotate(0deg)' },
+          '100%': { transform: 'rotate(-360deg)' },
+        },
+        'pulse-soft': {
+          '0%, 100%': { transform: 'scale(1)', opacity: '1' },
+          '50%': { transform: 'scale(0.98)', opacity: '0.9' },
+        },
+         'pulse-slow': {
+          '0%, 100%': { opacity: '0.1' },
+          '50%': { opacity: '0.2' },
+        },
+        'fade-in-up': {
+            '0%': {
+                opacity: '0',
+                transform: 'translateY(20px)'
+            },
+            '100%': {
+                opacity: '1',
+                transform: 'translateY(0)'
+            },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+        'spin-slow': 'spin-slow 10s linear infinite',
+        'spin-slow-reverse': 'spin-slow-reverse 12s linear infinite',
+        'pulse-soft': 'pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'pulse-slow': 'pulse-slow 5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'fade-in-up': 'fade-in-up 0.5s ease-out',
+      },
+      animationDelay: {
+        '4000': '4000ms',
       },
     },
   },
-  plugins: [require('tailwindcss-animate')],
+  plugins: [
+    require('tailwindcss-animate'),
+    function ({ addUtilities, theme }: { addUtilities: Function, theme: Function }) {
+      const newUtilities = {
+        '.animation-delay-4000': {
+          animationDelay: '4s',
+        },
+      }
+      addUtilities(newUtilities, ['responsive', 'hover'])
+    }
+  ],
 } satisfies Config;

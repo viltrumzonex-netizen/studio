@@ -23,18 +23,20 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
          <div className="w-full max-w-md space-y-6 flex flex-col items-center">
-             <div className="relative flex items-center justify-center">
-                <div className="absolute h-32 w-32 bg-primary/30 rounded-full blur-2xl animate-pulse"></div>
+             <div className="relative flex items-center justify-center h-48 w-48">
+                <div className="absolute inset-0 bg-primary/20 rounded-full blur-3xl animate-pulse"></div>
+                <div className="absolute inset-0 border-2 border-primary/30 rounded-full animate-spin-slow"></div>
+                <div className="absolute inset-4 border-t-2 border-primary/50 rounded-full animate-spin-slow-reverse"></div>
                 <Image 
                     src="/viltrum-logo-2.png" 
                     alt="Viltrum Wallet Logo" 
                     width={96} 
                     height={96} 
-                    className="relative z-10" 
+                    className="relative z-10 animate-pulse-soft" 
                     priority 
                 />
             </div>
-            <p className="text-muted-foreground animate-pulse">Cargando...</p>
+            <p className="text-muted-foreground tracking-widest animate-pulse">CARGANDO DATOS...</p>
         </div>
       </div>
     );
