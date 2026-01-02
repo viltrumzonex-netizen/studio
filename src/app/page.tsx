@@ -11,13 +11,14 @@ export default function LoginPage() {
   const router = useRouter();
 
   useEffect(() => {
+    // Only redirect if authentication is not loading and user is logged in.
     if (!loading && user) {
       router.push('/dashboard');
     }
   }, [user, loading, router]);
 
-  if (loading || (!loading && user)) {
-    // Render a loading state while checking auth and redirecting
+  // While loading, or if the user is logged in (and redirecting), show a full-screen loader.
+  if (loading || user) {
     return (
         <div className="flex min-h-screen flex-col items-center justify-center p-4 bg-background">
             <div className="w-full max-w-md space-y-6 flex flex-col items-center">
@@ -32,12 +33,13 @@ export default function LoginPage() {
                         priority 
                     />
                 </div>
-                <p className="text-muted-foreground animate-pulse">Autenticando...</p>
+                <p className="text-muted-foreground animate-pulse">Cargando...</p>
             </div>
         </div>
     );
   }
-
+  
+  // If not loading and no user, show the login form.
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-background overflow-hidden">
         <div className="absolute inset-0 z-0">

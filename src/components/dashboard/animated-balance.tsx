@@ -1,37 +1,41 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSettings } from '@/hooks/use-settings';
 
-function useCountUp(target: number, duration = 1) {
+function useCountUp(target: number, duration = 1.5) { // Slower duration for a smoother effect
   const [count, setCount] = useState(0);
+  const frameRef = useRef<number>();
 
   useEffect(() => {
-    let frameId: number;
-    const start = 0;
-    const end = target;
-    const totalFrames = duration * 60; // 60fps
-    let currentFrame = 0;
+    let startTimestamp: number | null = null;
+    const startValue = count; // Start from the current count to animate changes
 
-    const counter = () => {
-      currentFrame++;
-      const progress = currentFrame / totalFrames;
-      const newCount = start + (end - start) * progress;
+    const step = (timestamp: number) => {
+      if (!startTimestamp) {
+        startTimestamp = timestamp;
+      }
+      
+      const progress = Math.min((timestamp - startTimestamp) / (duration * 1000), 1);
+      const newCount = startValue + (target - startValue) * progress;
+      setCount(newCount);
 
-      if (currentFrame < totalFrames) {
-        setCount(newCount);
-        frameId = requestAnimationFrame(counter);
+      if (progress < 1) {
+        frameRef.current = requestAnimationFrame(step);
       } else {
-        setCount(end);
+        setCount(target); // Ensure it ends exactly on the target
       }
     };
 
-    frameId = requestAnimationFrame(counter);
+    frameRef.current = requestAnimationFrame(step);
 
     return () => {
-      cancelAnimationFrame(frameId);
+      if (frameRef.current) {
+        cancelAnimationFrame(frameRef.current);
+      }
     };
-  }, [target, duration]);
+  // Re-run animation only when the target value changes
+  }, [target, duration]); 
 
   return count;
 }

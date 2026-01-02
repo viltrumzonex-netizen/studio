@@ -29,8 +29,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<typeof MOCK_USER | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // In a real app, you'd check for a persisted session token here
   useEffect(() => {
-    // For demo, we'll just stop loading.
+    // For demo, we'll just stop loading. In a real app, this would be
+    // after checking for a token (e.g., from localStorage or a cookie)
     setLoading(false);
   }, []);
 
