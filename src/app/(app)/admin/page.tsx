@@ -10,11 +10,13 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { RechargeRequest } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { Users } from 'lucide-react';
 
 export default function AdminPage() {
     const { toast } = useToast();
     const [exchangeRate, setExchangeRate] = useState(0);
     const [rechargeRequests, setRechargeRequests] = useState<RechargeRequest[]>([]);
+    const [userCount, setUserCount] = useState<number>(0);
 
     const fetchSettings = async () => {
         try {
@@ -50,10 +52,25 @@ export default function AdminPage() {
              toast({ variant: 'destructive', title: 'Error', description: error.message });
         }
     }
+    
+    const fetchUserCount = async () => {
+        try {
+            const response = await fetch('/api/users/count');
+            const data = await response.json();
+            if(response.ok) {
+                setUserCount(data.userCount);
+            } else {
+                 throw new Error(data.message || 'Error al obtener el conteo de usuarios');
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error de Conexión', description: 'No se pudo obtener el número de usuarios. ¿La BD está conectada?' });
+        }
+    }
 
     useEffect(() => {
         fetchSettings();
         fetchRechargeRequests();
+        fetchUserCount();
     }, []);
 
 
@@ -117,8 +134,8 @@ export default function AdminPage() {
                 <p className="text-muted-foreground mt-1">Gestiona la configuración y las solicitudes de Viltrum Zone.</p>
             </header>
 
-            <div className="grid md:grid-cols-2 gap-8">
-                <Card className="glass-card">
+            <div className="grid md:grid-cols-3 gap-8">
+                <Card className="glass-card md:col-span-2">
                     <CardHeader>
                         <CardTitle>Tasa de Cambio</CardTitle>
                         <CardDescription>Establece la tasa de cambio de VTC a Bs.</CardDescription>
@@ -135,6 +152,20 @@ export default function AdminPage() {
                             />
                         </div>
                         <Button className="w-full bg-primary hover:bg-primary/90" onClick={handleRateUpdate}>Actualizar Tasa</Button>
+                    </CardContent>
+                </Card>
+
+                 <Card className="glass-card">
+                    <CardHeader>
+                        <CardTitle>Estadísticas</CardTitle>
+                        <CardDescription>Resumen de datos del sistema.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex items-center justify-center pt-4">
+                       <div className="text-center">
+                            <Users className="h-8 w-8 mx-auto text-muted-foreground" />
+                            <p className="text-4xl font-bold font-headline text-glow mt-2">{userCount}</p>
+                            <p className="text-sm text-muted-foreground">Usuarios Registrados</p>
+                       </div>
                     </CardContent>
                 </Card>
             </div>
