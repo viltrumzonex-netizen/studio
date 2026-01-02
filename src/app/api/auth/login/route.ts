@@ -11,12 +11,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Correo y contraseña son requeridos.' }, { status: 400 });
     }
 
-    const [results]: any = await query(
+    const results: any = await query(
       'SELECT id, email, displayName, role, password FROM users WHERE email = ?',
       [email]
     );
 
-    if (results.length === 0) {
+    // CRITICAL FIX: Check if results array is empty or undefined
+    if (!results || results.length === 0) {
       return NextResponse.json({ message: 'Credenciales inválidas.' }, { status: 401 });
     }
 

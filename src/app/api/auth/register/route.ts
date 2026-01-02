@@ -15,8 +15,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if user already exists
-    const [existingUsers]: any = await query('SELECT id FROM users WHERE email = ?', [email]);
-    if (existingUsers.length > 0) {
+    const existingUsers: any = await query('SELECT id FROM users WHERE email = ?', [email]);
+    
+    // CRITICAL FIX: Check if existingUsers array has content
+    if (existingUsers && existingUsers.length > 0) {
         return NextResponse.json({ message: 'El correo electrónico ya está en uso.' }, { status: 409 });
     }
     
