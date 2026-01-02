@@ -5,15 +5,11 @@ import { useAuth } from '@/hooks/use-auth';
 import BottomNav from '@/components/shared/bottom-nav';
 import Sidebar from '@/components/shared/sidebar';
 import Image from 'next/image';
-import { useWallet } from '@/hooks/use-wallet';
 import { useRouter } from 'next/navigation';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useAuth();
-  const { loading: walletLoading } = useWallet();
   const router = useRouter();
-
-  const loading = authLoading || walletLoading;
 
   useEffect(() => {
     // If authentication is done and there's NO user, redirect to login page.
@@ -23,7 +19,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   }, [authLoading, user, router]);
 
   // If we are loading OR there is no user (and we are about to redirect), show the loader.
-  if (loading || !user) {
+  if (authLoading || !user) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
          <div className="w-full max-w-md space-y-6 flex flex-col items-center">

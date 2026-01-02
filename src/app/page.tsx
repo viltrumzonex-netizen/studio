@@ -18,7 +18,7 @@ export default function LoginPage() {
 
 
   // Show a loader while authentication is in progress.
-  if (loading) {
+  if (loading || user) { // Also show loader if user exists and we are about to redirect
     return (
         <div className="flex min-h-screen flex-col items-center justify-center p-4 bg-background">
             <div className="w-full max-w-md space-y-6 flex flex-col items-center">

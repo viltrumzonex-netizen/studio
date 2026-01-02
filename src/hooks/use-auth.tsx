@@ -33,6 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const checkUserSession = async () => {
+      setLoading(true);
       try {
         const response = await fetch('/api/auth/session');
         const data = await response.json();
@@ -53,11 +54,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
 
-  const handleAuthSuccess = useCallback((userData: User) => {
-      setUser(userData);
-      // No need to push route here, the layout effect will handle it
-  }, []);
-
   const login = async (email: string, password: string) => {
     const response = await fetch('/api/auth/login', {
       method: 'POST',
@@ -70,7 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error(data.message || 'Error al iniciar sesión.');
     }
     
-    handleAuthSuccess(data.user);
+    setUser(data.user);
   };
   
   const register = async (email: string, password: string, displayName: string) => {
@@ -85,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           throw new Error(data.message || 'Error al registrar el usuario.');
       }
 
-      handleAuthSuccess(data.user);
+      setUser(data.user);
   };
 
   const logout = async () => {
