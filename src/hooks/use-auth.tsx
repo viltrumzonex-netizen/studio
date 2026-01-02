@@ -31,6 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
+  // On initial load, check localStorage for a user session
   useEffect(() => {
     const checkUserSession = () => {
       setLoading(true);
@@ -52,6 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     checkUserSession();
     
+    // Listen for changes in other tabs
     const handleStorageChange = (event: StorageEvent) => {
         if (event.key === 'viltrum_user') {
             checkUserSession();
@@ -65,9 +67,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   }, []);
 
+
   const handleAuthSuccess = useCallback((userData: User) => {
+      // 1. Set user state and persist in localStorage first.
       setUser(userData);
       localStorage.setItem('viltrum_user', JSON.stringify(userData));
+      
+      // 2. Then, navigate to the dashboard.
       router.push('/dashboard'); 
   }, [router]);
 
@@ -107,6 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
         console.error("Failed to call logout API", error);
     } finally {
+        // Clear user state and redirect to home
         setUser(null);
         localStorage.removeItem('viltrum_user');
         router.push('/');
