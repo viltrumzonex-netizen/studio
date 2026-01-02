@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // This function runs once on mount to check for an existing session.
+    // This function runs once on mount to check for an existing session from localStorage.
     const checkUserSession = () => {
         setLoading(true);
         try {
@@ -40,7 +40,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
         } catch (e) {
             console.error("Failed to parse user from localStorage", e);
-            // Clear corrupted data
             localStorage.removeItem('viltrum_user');
             setUser(null);
         } finally {
@@ -51,9 +50,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     checkUserSession();
   }, []);
 
+  const handleAuthSuccess = (userData: User) => {
+      setUser(userData);
+      localStorage.setItem('viltrum_user', JSON.stringify(userData));
+      // Instead of router.push here, we rely on the middleware for redirection.
+      // This also helps in correctly setting the cookie for the middleware to read.
+      document.cookie = `viltrum_user=${encodeURIComponent(JSON.stringify(userData))}; path=/; max-age=60*60*24*7`;
+      window.location.href = '/dashboard'; // Force a full refresh to ensure middleware runs
+  }
+
 
   const login = async (email: string, password: string) => {
-    setLoading(true);
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -67,19 +74,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(data.message || 'Error al iniciar sesión.');
       }
       
-      setUser(data.user);
-      localStorage.setItem('viltrum_user', JSON.stringify(data.user));
+      handleAuthSuccess(data.user);
 
     } catch (error: any) {
-      // Re-throw the error so the form can catch it and display a toast
       throw error;
-    } finally {
-      setLoading(false);
     }
   };
   
   const register = async (email: string, password: string, displayName: string) => {
-    setLoading(true);
     try {
         const response = await fetch('/api/auth/register', {
             method: 'POST',
@@ -93,24 +95,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             throw new Error(data.message || 'Error al registrar el usuario.');
         }
 
-        setUser(data.user);
-        localStorage.setItem('viltrum_user', JSON.stringify(data.user));
+        handleAuthSuccess(data.user);
 
     } catch (error: any) {
-        // Re-throw the error so the form can catch it and display a toast
         throw error;
-    } finally {
-        setLoading(false);
     }
   };
 
 
   const logout = async () => {
-    setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 100)); // Short delay
     setUser(null);
     localStorage.removeItem('viltrum_user');
-    setLoading(false);
+    // Clear the session cookie for the middleware
+    document.cookie = 'viltrum_user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    window.location.href = '/'; // Force a full refresh to ensure middleware runs
   };
 
 

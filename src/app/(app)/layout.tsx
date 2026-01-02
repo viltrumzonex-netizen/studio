@@ -9,16 +9,9 @@ import Image from 'next/image';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    // If auth is done loading and there's no user, redirect to login.
-    if (!loading && !user) {
-      router.push('/');
-    }
-  }, [user, loading, router]);
-
-  // Show a loader while authentication is in progress or if there's no user yet.
+  
+  // The middleware now handles redirection. We just need to show a loading
+  // state until the auth status is confirmed.
   if (loading || !user) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">

@@ -11,15 +11,9 @@ export default function LoginPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
-  useEffect(() => {
-    // Only redirect if authentication is not loading and user is logged in.
-    if (!loading && user) {
-      router.push('/dashboard');
-    }
-  }, [user, loading, router]);
-
-  // While loading, or if the user is logged in (and redirecting), show a full-screen loader.
-  if (loading || user) {
+  // Show a loader while authentication is in progress.
+  // The middleware will handle redirection if the user is already logged in.
+  if (loading) {
     return (
         <div className="flex min-h-screen flex-col items-center justify-center p-4 bg-background">
             <div className="w-full max-w-md space-y-6 flex flex-col items-center">
