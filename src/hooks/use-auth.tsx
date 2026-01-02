@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useState, type ReactNode, useEffect } from 'react';
 
-// This user type should ideally match the structure from your database
 export type User = {
   uid: string;
   email: string;
@@ -13,7 +12,8 @@ export type User = {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email?: string, password?: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, displayName: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -21,6 +21,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
   login: async () => {},
+  register: async () => {},
   logout: async () => {},
 });
 
@@ -29,12 +30,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // This could be where you verify a token stored in localStorage in the future
+    // Check for user in local storage to persist session
+    const storedUser = localStorage.getItem('viltrum_user');
+    if (storedUser) {
+        try {
+            setUser(JSON.parse(storedUser));
+        } catch (e) {
+            localStorage.removeItem('viltrum_user');
+        }
+    }
     setLoading(false);
   }, []);
 
 
-  const login = async (email?: string, password?: string) => {
+  const login = async (email: string, password: string) => {
     setLoading(true);
 
     try {
@@ -50,26 +59,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(data.message || 'Error al iniciar sesión.');
       }
       
-      // The user data now comes from the database via the API
       setUser(data.user);
+      localStorage.setItem('viltrum_user', JSON.stringify(data.user));
 
     } catch (error: any) {
-      // Re-throw the error to be caught by the form
       throw error;
     } finally {
       setLoading(false);
     }
   };
+  
+  const register = async (email: string, password: string, displayName: string) => {
+    setLoading(true);
+    try {
+        const response = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password, displayName }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || 'Error al registrar el usuario.');
+        }
+
+        setUser(data.user);
+        localStorage.setItem('viltrum_user', JSON.stringify(data.user));
+
+    } catch (error: any) {
+        throw error;
+    } finally {
+        setLoading(false);
+    }
+  };
+
 
   const logout = async () => {
     setLoading(true);
     await new Promise(resolve => setTimeout(resolve, 500));
     setUser(null);
+    localStorage.removeItem('viltrum_user');
     setLoading(false);
   };
 
 
-  const value = { user, loading, login, logout };
+  const value = { user, loading, login, register, logout };
 
   return (
     <AuthContext.Provider value={value}>

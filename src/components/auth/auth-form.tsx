@@ -16,10 +16,16 @@ import {
 } from '@/components/ui/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Mail, Lock } from 'lucide-react';
+import { Mail, Lock, User as UserIcon } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 
-const formSchema = z.object({
+const loginSchema = z.object({
+  email: z.string().email({ message: 'Dirección de correo inválida.' }),
+  password: z.string().min(6, { message: 'La contraseña debe tener al menos 6 caracteres.' }),
+});
+
+const registerSchema = z.object({
+  displayName: z.string().min(3, { message: 'El nombre de usuario debe tener al menos 3 caracteres.'}),
   email: z.string().email({ message: 'Dirección de correo inválida.' }),
   password: z.string().min(6, { message: 'La contraseña debe tener al menos 6 caracteres.' }),
 });
@@ -28,25 +34,33 @@ export default function AuthForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState('login');
   const { toast } = useToast();
-  const { login } = useAuth();
+  const { login, register } = useAuth();
   
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<z.infer<typeof loginSchema> | z.infer<typeof registerSchema>>({
+    resolver: zodResolver(activeTab === 'login' ? loginSchema : registerSchema),
     defaultValues: {
-      email: 'usuario@ejemplo.com',
-      password: 'password',
+      email: '',
+      password: '',
+      ...(activeTab === 'register' && { displayName: '' }),
     },
   });
 
-  const handleAuthAction = async (values: z.infer<typeof formSchema>) => {
+  const handleAuthAction = async (values: z.infer<typeof loginSchema> | z.infer<typeof registerSchema>) => {
     setIsSubmitting(true);
     try {
-      await login(values.email, values.password);
-      toast({ title: 'Inicio de Sesión Exitoso', description: "¡Bienvenido de vuelta!" });
+        if (activeTab === 'login') {
+            const { email, password } = values as z.infer<typeof loginSchema>;
+            await login(email, password);
+            toast({ title: 'Inicio de Sesión Exitoso', description: "¡Bienvenido de vuelta!" });
+        } else {
+            const { email, password, displayName } = values as z.infer<typeof registerSchema>;
+            await register(email, password, displayName);
+            toast({ title: 'Registro Exitoso', description: `¡Bienvenido a Viltrum Wallet, ${displayName}!` });
+        }
     } catch (error: any) {
       toast({
         variant: 'destructive',
-        title: 'Fallo de Autenticación',
+        title: activeTab === 'login' ? 'Fallo de Autenticación' : 'Fallo en el Registro',
         description: error.message || 'Ocurrió un error desconocido.',
       });
     } finally {
@@ -54,8 +68,18 @@ export default function AuthForm() {
     }
   };
 
+  // Reset form when tab changes
+  const onTabChange = (value: string) => {
+    setActiveTab(value);
+    form.reset({
+      email: '',
+      password: '',
+      ...(value === 'register' && { displayName: '' }),
+    });
+  }
+
   return (
-    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+    <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
       <TabsList className="grid w-full grid-cols-2 bg-white/5">
         <TabsTrigger value="login">Iniciar Sesión</TabsTrigger>
         <TabsTrigger value="register">Registrarse</TabsTrigger>
@@ -64,6 +88,24 @@ export default function AuthForm() {
       <div className="space-y-4 glass-card p-6 mt-4 rounded-lg">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleAuthAction)} className="space-y-6">
+            {activeTab === 'register' && (
+                 <FormField
+                    control={form.control}
+                    name="displayName"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Nombre de Usuario</FormLabel>
+                        <FormControl>
+                            <div className="relative">
+                                <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input placeholder="Tu nombre de usuario" {...field} className="pl-10" />
+                            </div>
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            )}
             <FormField
               control={form.control}
               name="email"
@@ -85,7 +127,8 @@ export default function AuthForm() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Contraseña</FormLabel>                  <FormControl>
+                  <FormLabel>Contraseña</FormLabel>                  
+                  <FormControl>
                       <div className="relative">
                           <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                           <Input type="password" placeholder="••••••••" {...field} className="pl-10" />
@@ -101,7 +144,7 @@ export default function AuthForm() {
               disabled={isSubmitting}
               className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
             >
-              {isSubmitting ? (activeTab === 'login' ? 'Iniciando sesión...' : 'Registrando...') : (activeTab === 'login' ? 'Iniciar Sesión' : 'Registrarse')}
+              {isSubmitting ? (activeTab === 'login' ? 'Iniciando sesión...' : 'Registrando...') : (activeTab === 'login' ? 'Iniciar Sesión' : 'Crear Cuenta')}
             </Button>
           </form>
         </Form>

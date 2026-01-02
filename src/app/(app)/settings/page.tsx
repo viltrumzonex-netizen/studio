@@ -1,6 +1,7 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { ThemeToggle } from "@/components/settings/theme-toggle";
 
 export default function SettingsPage() {
     return (
@@ -13,11 +14,12 @@ export default function SettingsPage() {
             <Card className="glass-card max-w-2xl">
                 <CardHeader>
                     <CardTitle className="text-lg">Apariencia</CardTitle>
+                    <CardDescription>
+                        Elige entre un tema claro o uno oscuro para personalizar tu experiencia.
+                    </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-8">
-                   <p className="text-sm text-muted-foreground text-center pt-2">
-                        Más opciones de configuración estarán disponibles próximamente.
-                    </p>
+                <CardContent className="flex justify-center items-center pt-2">
+                   <ThemeToggle />
                 </CardContent>
             </Card>
         </div>
