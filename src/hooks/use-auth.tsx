@@ -53,7 +53,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     checkUserSession();
     
-    // Listen for changes in other tabs
     const handleStorageChange = (event: StorageEvent) => {
         if (event.key === 'viltrum_user') {
             checkUserSession();
@@ -113,7 +112,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
         console.error("Failed to call logout API", error);
     } finally {
-        // Clear user state and redirect to home
         setUser(null);
         localStorage.removeItem('viltrum_user');
         router.push('/');

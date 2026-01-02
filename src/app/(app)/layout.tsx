@@ -1,16 +1,25 @@
 'use client';
 
-import { type ReactNode } from 'react';
+import { type ReactNode, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import BottomNav from '@/components/shared/bottom-nav';
 import Sidebar from '@/components/shared/sidebar';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    // If loading is finished and there is no user, redirect to login page.
+    if (!loading && !user) {
+      router.push('/');
+    }
+  }, [user, loading, router]);
   
-  // The middleware now handles redirection. We just need to show a loading
-  // state until the auth status is confirmed from the client side.
+  // While loading, show a full-screen loader.
+  // This prevents content flashing and ensures we know the user's status.
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
@@ -34,8 +43,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  // If loading is finished and there is still no user, middleware will redirect.
-  // If there is a user, render the app layout.
+  // If loading is finished and there is a user, render the app layout.
   if (user) {
     return (
       <div className="flex min-h-screen bg-background">
@@ -50,8 +58,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  // If loading is finished and there's no user, we can return null or a loader
-  // as middleware will handle redirection. A loader is safer to prevent flashes.
+  // If loading is finished and there's no user, show a redirection message.
+  // The useEffect above will handle the actual redirection.
   return (
     <div className="flex h-screen items-center justify-center bg-background">
       <p className="text-muted-foreground tracking-widest">Redirigiendo...</p>
