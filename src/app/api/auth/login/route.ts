@@ -22,7 +22,6 @@ export async function POST(req: NextRequest) {
 
     const dbUser = results[0];
 
-    // Corrected order: bcrypt.compare(plain_password, hash)
     const passwordMatches = await bcrypt.compare(password, dbUser.password);
 
     if (!passwordMatches) {
@@ -30,7 +29,7 @@ export async function POST(req: NextRequest) {
     }
 
     const user: User = {
-      uid: dbUser.id.toString(),
+      uid: String(dbUser.id), // Ensure UID is always a string
       email: dbUser.email,
       displayName: dbUser.displayName,
       role: dbUser.role,

@@ -32,6 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // This function runs once on mount to check for an existing session.
     const checkUserSession = () => {
+        setLoading(true);
         try {
             const storedUser = localStorage.getItem('viltrum_user');
             if (storedUser) {
@@ -39,7 +40,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
         } catch (e) {
             console.error("Failed to parse user from localStorage", e);
+            // Clear corrupted data
             localStorage.removeItem('viltrum_user');
+            setUser(null);
         } finally {
             setLoading(false);
         }
@@ -103,9 +106,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 
   const logout = async () => {
-    await new Promise(resolve => setTimeout(resolve, 300));
+    setLoading(true);
+    await new Promise(resolve => setTimeout(resolve, 100)); // Short delay
     setUser(null);
     localStorage.removeItem('viltrum_user');
+    setLoading(false);
   };
 
 
