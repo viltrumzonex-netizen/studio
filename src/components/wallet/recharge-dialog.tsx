@@ -97,9 +97,8 @@ export default function RechargeDialog() {
         const response = await fetch('/api/recharges', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            // The user ID is no longer sent from the client.
-            // The backend gets it securely from the session cookie.
             body: JSON.stringify(values),
+            credentials: 'include', // Include cookies in the request
         });
 
         const data = await response.json();
