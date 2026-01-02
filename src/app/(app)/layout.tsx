@@ -11,15 +11,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
 
-  useEffect(() => {
-    // If loading is finished and there is no user, redirect to login page.
-    if (!loading && !user) {
-      router.push('/');
-    }
-  }, [user, loading, router]);
-  
+  // On initial render and when auth state changes, this logic determines what to show.
+  // It relies on the useAuth hook to handle session logic.
+
   // While loading, show a full-screen loader.
-  // This prevents content flashing and ensures we know the user's status.
+  // This prevents content flashing and ensures we know the user's status before rendering.
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
@@ -58,8 +54,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  // If loading is finished and there's no user, show a redirection message.
-  // The useEffect above will handle the actual redirection.
+  // If loading is finished and there's no user, the useAuth hook should be handling
+  // the redirection to the login page. We show a "Redirecting..." message
+  // as a fallback while that happens.
   return (
     <div className="flex h-screen items-center justify-center bg-background">
       <p className="text-muted-foreground tracking-widest">Redirigiendo...</p>
