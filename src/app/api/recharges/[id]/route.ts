@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbPool from '@/lib/db';
+import pool from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
 import type { PoolConnection } from 'mysql2/promise';
 
@@ -14,7 +14,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       return NextResponse.json({ message: 'ID de solicitud y estado válido son requeridos.' }, { status: 400 });
     }
     
-    connection = await dbPool.getConnection();
+    connection = await pool.getConnection();
     await connection.beginTransaction();
 
     const [existingRequest]: any = await connection.query('SELECT * FROM recharge_requests WHERE id = ? FOR UPDATE', [id]);
