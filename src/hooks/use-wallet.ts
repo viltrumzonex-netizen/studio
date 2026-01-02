@@ -10,14 +10,11 @@ import { v4 as uuidv4 } from 'uuid';
 interface WalletState {
   walletCoins: Coin[];
   transactions: Transaction[];
-  rechargeRequests: RechargeRequest[];
   circulatingSupply: number;
   getVtcBalance: () => number;
   purchaseItem: (amount: number) => void;
   addTransaction: (transaction: Transaction) => void;
-  addRechargeRequest: (request: RechargeRequest) => void;
-  updateRechargeRequest: (id: string, status: 'approved' | 'denied') => void;
-  approveRecharge: (id: string, vtcAmount: number) => void;
+  approveRecharge: (id: string, vtcAmount: number, userId: string) => void;
 }
 
 const useWalletStore = create<WalletState>()(
@@ -25,7 +22,6 @@ const useWalletStore = create<WalletState>()(
     (set, get) => ({
       walletCoins: initialWalletCoins,
       transactions: initialTransactions,
-      rechargeRequests: [],
       circulatingSupply: initialWalletCoins.reduce((acc, coin) => acc + coin.amount, 0),
       
       getVtcBalance: () => {
@@ -46,23 +42,15 @@ const useWalletStore = create<WalletState>()(
       addTransaction: (transaction) => set((state) => ({
         transactions: [transaction, ...state.transactions],
       })),
-
-      addRechargeRequest: (request) => set(state => ({
-        rechargeRequests: [request, ...state.rechargeRequests]
-      })),
-
-      updateRechargeRequest: (id, status) => set(state => ({
-        rechargeRequests: state.rechargeRequests.map(req => 
-            req.id === id ? { ...req, status } : req
-        )
-      })),
-
-      approveRecharge: (id, vtcAmount) => {
-        const request = get().rechargeRequests.find(req => req.id === id);
-        if (!request) return;
-
+      
+      // Note: Recharge request management is now handled via API and database.
+      // This state hook will now only handle the *result* of an approved recharge.
+      approveRecharge: (id, vtcAmount, userId) => {
+        // This function will be called AFTER the API confirms the approval.
+        // It's responsible for updating the client-side state.
         set(state => {
-            // 1. Update user's VTC balance
+            // In a full DB implementation, this would re-fetch the user's balance.
+            // For now, we simulate the update.
             const newWalletCoins = state.walletCoins.map(coin => {
                 if (coin.symbol === 'VTC') {
                     return { ...coin, amount: coin.amount + vtcAmount };
@@ -70,29 +58,21 @@ const useWalletStore = create<WalletState>()(
                 return coin;
             });
 
-            // 2. Add a 'top-up' transaction
             const newTransaction: Transaction = {
                 id: `TXN-${uuidv4().slice(0,8)}`,
                 type: 'top-up',
                 coin: state.walletCoins.find(c => c.symbol === 'VTC')!,
                 amount: vtcAmount,
-                usdValue: request.amountBs, // Or calculate based on rate
+                usdValue: vtcAmount, // Placeholder
                 date: new Date(),
-                from: 'Admin Approval'
+                from: 'Recarga Aprobada'
             };
 
-            // 3. Update the request status
-            const newRechargeRequests = state.rechargeRequests.map(req =>
-                req.id === id ? { ...req, status: 'approved' as const } : req
-            );
-
-            // 4. Update circulating supply
             const newCirculatingSupply = state.circulatingSupply + vtcAmount;
 
             return {
                 walletCoins: newWalletCoins,
                 transactions: [newTransaction, ...state.transactions],
-                rechargeRequests: newRechargeRequests,
                 circulatingSupply: newCirculatingSupply,
             };
         });
@@ -117,13 +97,10 @@ const useWallet = () => {
   const initialState: WalletState = {
       walletCoins: initialWalletCoins,
       transactions: initialTransactions,
-      rechargeRequests: [],
       circulatingSupply: initialWalletCoins.reduce((acc, coin) => acc + coin.amount, 0),
       getVtcBalance: () => initialWalletCoins.find(c => c.symbol === 'VTC')?.amount || 0,
       purchaseItem: () => {},
       addTransaction: () => {},
-      addRechargeRequest: () => {},
-      updateRechargeRequest: () => {},
       approveRecharge: () => {},
   };
 

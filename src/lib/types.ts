@@ -21,10 +21,11 @@ export type Transaction = {
 
 export type RechargeRequest = {
     id: string;
-    user: string;
+    userId: string; // From the DB
+    userEmail?: string; // Joined from users table
     amountBs: number;
     method: 'Pago Móvil' | 'Zinli' | 'Binance';
     reference: string;
-    date: Date;
+    date: Date; // createdAt from DB
     status: 'pending' | 'approved' | 'denied';
 }

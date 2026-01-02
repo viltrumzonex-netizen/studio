@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,13 +11,36 @@ import { cn } from "@/lib/utils";
 import type { RechargeRequest } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/hooks/use-settings';
-import { useWallet } from '@/hooks/use-wallet';
 
 export default function AdminPage() {
     const { toast } = useToast();
     const { exchangeRate, setExchangeRate } = useSettings();
     const [localRate, setLocalRate] = useState(exchangeRate);
-    const { rechargeRequests, updateRechargeRequest, approveRecharge } = useWallet();
+    const [rechargeRequests, setRechargeRequests] = useState<RechargeRequest[]>([]);
+
+    const fetchRechargeRequests = async () => {
+        try {
+            const response = await fetch('/api/recharges');
+            const data = await response.json();
+            if (response.ok) {
+                // Procesar las fechas
+                const requests = data.map((req: any) => ({
+                    ...req,
+                    date: new Date(req.createdAt),
+                }));
+                setRechargeRequests(requests);
+            } else {
+                throw new Error(data.message || 'Error al obtener solicitudes');
+            }
+        } catch (error: any) {
+             toast({ variant: 'destructive', title: 'Error', description: error.message });
+        }
+    }
+
+    useEffect(() => {
+        fetchRechargeRequests();
+    }, []);
+
 
     const handleRateUpdate = () => {
         setExchangeRate(localRate);
@@ -27,24 +50,38 @@ export default function AdminPage() {
         });
     };
 
-    const handleStatusChange = (id: string, newStatus: 'approved' | 'denied') => {
-        const request = rechargeRequests.find(req => req.id === id);
-        if (!request) return;
+    const handleStatusChange = async (id: string, newStatus: 'approved' | 'denied') => {
+        const originalRequests = [...rechargeRequests];
+        
+        // Optimistic UI update
+        setRechargeRequests(prev => prev.map(req => req.id === id ? {...req, status: newStatus} : req));
 
-        if (newStatus === 'approved') {
-            const vtcAmount = request.amountBs / exchangeRate;
-            approveRecharge(id, vtcAmount);
-            toast({
-                title: `Solicitud Aprobada`,
-                description: `Se acreditaron ${vtcAmount.toFixed(2)} VTC al usuario.`,
+        try {
+            const response = await fetch(`/api/recharges/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus }),
             });
-        } else {
-            updateRechargeRequest(id, newStatus);
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Error al actualizar la solicitud.');
+            }
+            
             toast({
-                variant: 'destructive',
-                title: `Solicitud Denegada`,
-                description: `La solicitud ${id} ha sido denegada.`,
+                title: `Solicitud ${newStatus === 'approved' ? 'Aprobada' : 'Denegada'}`,
+                description: `La solicitud ${id} ha sido actualizada.`,
+                variant: newStatus === 'denied' ? 'destructive' : 'default'
             });
+
+            // Re-fetch to ensure data is consistent
+            fetchRechargeRequests();
+
+        } catch (error: any) {
+            // Revert UI on error
+            setRechargeRequests(originalRequests);
+            toast({ variant: 'destructive', title: 'Error', description: error.message });
         }
     };
 
@@ -98,8 +135,8 @@ export default function AdminPage() {
                         <TableBody>
                             {rechargeRequests.map(req => (
                                 <TableRow key={req.id}>
-                                    <TableCell>{req.user}</TableCell>
-                                    <TableCell>{req.amountBs.toLocaleString('es-VE', { minimumFractionDigits: 2 })}</TableCell>
+                                    <TableCell>{req.userEmail}</TableCell>
+                                    <TableCell>{Number(req.amountBs).toLocaleString('es-VE', { minimumFractionDigits: 2 })}</TableCell>
                                     <TableCell>{req.method}</TableCell>
                                     <TableCell>{req.reference}</TableCell>
                                     <TableCell>{req.date.toLocaleDateString()}</TableCell>

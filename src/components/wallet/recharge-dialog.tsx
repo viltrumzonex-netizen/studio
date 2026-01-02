@@ -40,9 +40,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Copy, PlusCircle } from "lucide-react";
 import { useSettings } from '@/hooks/use-settings';
-import { useWallet } from '@/hooks/use-wallet';
 import { useAuth } from '@/hooks/use-auth';
-import { v4 as uuidv4 } from 'uuid';
 
 const paymentMethods = [
     {
@@ -80,7 +78,6 @@ const rechargeSchema = z.object({
 export default function RechargeDialog() {
   const { toast } = useToast();
   const { exchangeRate } = useSettings();
-  const { addRechargeRequest } = useWallet();
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
 
@@ -97,29 +94,36 @@ export default function RechargeDialog() {
     toast({ title: "¡Copiado!", description: `${label} copiado al portapapeles.` });
   };
 
-  const onSubmit = (values: z.infer<typeof rechargeSchema>) => {
+  const onSubmit = async (values: z.infer<typeof rechargeSchema>) => {
     if (!user) {
         toast({ variant: 'destructive', title: "Error", description: "Debes iniciar sesión para recargar." });
         return;
     }
 
-    addRechargeRequest({
-        id: `REQ-${uuidv4().slice(0, 8)}`,
-        user: user.email,
-        amountBs: values.amountBs,
-        method: values.method,
-        reference: values.reference,
-        date: new Date(),
-        status: 'pending',
-    });
-    
-    toast({
-        title: "Solicitud de Recarga Enviada",
-        description: "Tu solicitud ha sido enviada y será procesada por un administrador.",
-    });
+    try {
+        const response = await fetch('/api/recharges', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...values, userId: user.uid }),
+        });
 
-    form.reset();
-    setOpen(false);
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || 'Error al enviar la solicitud.');
+        }
+        
+        toast({
+            title: "Solicitud de Recarga Enviada",
+            description: "Tu solicitud ha sido enviada y será procesada por un administrador.",
+        });
+
+        form.reset();
+        setOpen(false);
+
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: "Error", description: error.message });
+    }
   }
 
   return (
