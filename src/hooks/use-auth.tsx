@@ -30,12 +30,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for user in local storage to persist session
     const storedUser = localStorage.getItem('viltrum_user');
     if (storedUser) {
         try {
             setUser(JSON.parse(storedUser));
         } catch (e) {
+            console.error("Failed to parse user from localStorage", e);
             localStorage.removeItem('viltrum_user');
         }
     }
@@ -44,8 +44,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 
   const login = async (email: string, password: string) => {
-    setLoading(true);
-
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -63,15 +61,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('viltrum_user', JSON.stringify(data.user));
 
     } catch (error: any) {
-      // Re-throw the error so the form can catch it
       throw error;
-    } finally {
-      setLoading(false);
     }
   };
   
   const register = async (email: string, password: string, displayName: string) => {
-    setLoading(true);
     try {
         const response = await fetch('/api/auth/register', {
             method: 'POST',
@@ -89,20 +83,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem('viltrum_user', JSON.stringify(data.user));
 
     } catch (error: any) {
-        // Re-throw the error so the form can catch it
         throw error;
-    } finally {
-        setLoading(false);
     }
   };
 
 
   const logout = async () => {
-    setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 300));
     setUser(null);
     localStorage.removeItem('viltrum_user');
-    setLoading(false);
   };
 
 
