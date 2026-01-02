@@ -9,6 +9,7 @@ import {
   LogOut,
   Settings,
   ShieldCheck,
+  Store,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -21,6 +22,7 @@ const navItems = [
   { href: '/dashboard', label: 'Panel', icon: LayoutDashboard },
   { href: '/wallet', label: 'Billetera', icon: Wallet },
   { href: '/transactions', label: 'Actividad', icon: ArrowRightLeft },
+  { href: '/store', label: 'Tienda', icon: Store },
 ];
 
 const bottomNavItems = [

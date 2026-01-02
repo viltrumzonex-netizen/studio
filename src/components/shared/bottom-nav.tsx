@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Wallet, ArrowRightLeft } from 'lucide-react';
+import { LayoutDashboard, Wallet, ArrowRightLeft, Store } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/dashboard', label: 'Panel', icon: LayoutDashboard },
   { href: '/wallet', label: 'Billetera', icon: Wallet },
   { href: '/transactions', label: 'Actividad', icon: ArrowRightLeft },
+  { href: '/store', label: 'Tienda', icon: Store },
 ];
 
 export default function BottomNav() {
@@ -16,7 +17,7 @@ export default function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 h-16 bg-background/70 backdrop-blur-lg border-t border-white/10 md:hidden">
-      <div className="flex justify-around items-center h-full max-w-md mx-auto">
+      <div className="flex justify-around items-center h-full max-w-lg mx-auto">
         {navItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
           return (
