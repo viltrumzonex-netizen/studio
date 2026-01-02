@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import type { User } from '@/hooks/use-auth';
-import { serialize } from 'cookie';
+import { serialize } from 'serialize-cookie';
 
 export async function POST(req: NextRequest) {
   try {

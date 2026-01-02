@@ -18,6 +18,16 @@ interface AuthContextType {
   logout: () => Promise<void>;
 }
 
+// Helper to get a cookie value by name
+const getCookie = (name: string): string | null => {
+    if (typeof window === 'undefined') return null;
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
+    return null;
+};
+
+
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
@@ -32,25 +42,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    const checkUserSession = async () => {
-      setLoading(true);
-      try {
-        const response = await fetch('/api/auth/session');
-        const data = await response.json();
-        if (response.ok && data.user) {
-          setUser(data.user);
+    setLoading(true);
+    try {
+        const sessionCookie = getCookie('viltrum_session');
+        if (sessionCookie) {
+            const sessionUser = JSON.parse(decodeURIComponent(sessionCookie));
+            setUser(sessionUser);
         } else {
-          setUser(null);
+            setUser(null);
         }
-      } catch (e) {
-        console.error("Failed to fetch session", e);
+    } catch (e) {
+        console.error("Failed to parse session cookie", e);
         setUser(null);
-      } finally {
+    } finally {
         setLoading(false);
-      }
-    };
-    
-    checkUserSession();
+    }
   }, []);
 
 
