@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Correo y contraseña son requeridos.' }, { status: 400 });
     }
 
-    const results: any = await query(
+    const [results]: any = await query(
       'SELECT id, email, displayName, role, password FROM users WHERE email = ?',
       [email]
     );
