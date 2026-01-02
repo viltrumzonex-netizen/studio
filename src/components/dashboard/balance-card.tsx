@@ -1,21 +1,22 @@
 'use client';
 
 import { Card, CardContent } from "@/components/ui/card";
-import { walletCoins } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import { ArrowUpRight, ArrowDownLeft, PlusCircle } from "lucide-react";
 import Link from 'next/link';
 import AnimatedBalance from "@/components/dashboard/animated-balance";
 import Image from "next/image";
 import { useSettings } from "@/hooks/use-settings";
-
-// Find the Viltrum Coin from the wallet to display its balance
-const viltrumCoin = walletCoins.find(c => c.symbol === 'VTC');
-const vtcBalance = viltrumCoin ? viltrumCoin.amount : 0;
-const vtcIconUrl = viltrumCoin ? viltrumCoin.iconUrl : '';
+import { useWallet } from "@/hooks/use-wallet";
 
 export default function BalanceCard() {
     const { exchangeRate } = useSettings();
+    const { getVtcBalance, walletCoins } = useWallet();
+    
+    // Find the Viltrum Coin from the wallet to display its balance
+    const viltrumCoin = walletCoins.find(c => c.symbol === 'VTC');
+    const vtcBalance = getVtcBalance();
+    const vtcIconUrl = viltrumCoin ? viltrumCoin.iconUrl : '';
     const vesValue = vtcBalance * exchangeRate;
 
     return (
@@ -39,7 +40,7 @@ export default function BalanceCard() {
                 <div>
                     <div className="flex items-center gap-4">
                         <AnimatedBalance value={vtcBalance} />
-                        <Image src={vtcIconUrl} alt="VTC Coin" width={56} height={56} className="-ml-2" />
+                        {vtcIconUrl && <Image src={vtcIconUrl} alt="VTC Coin" width={56} height={56} className="-ml-2" />}
                     </div>
                     <div className='-mt-2 space-y-1'>
                         <p className="text-muted-foreground">{vesValue.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} VES</p>
@@ -48,7 +49,7 @@ export default function BalanceCard() {
                 
                 <div className="grid grid-cols-3 gap-2 pt-4">
                     <Button asChild variant="outline" className="flex-col h-auto py-2 bg-transparent border-primary/30 hover:bg-primary/10">
-                        <Link href="/transactions">
+                        <Link href="/wallet">
                             <PlusCircle className="h-5 w-5"/>
                             <span className="text-xs mt-1">Recargar</span>
                         </Link>

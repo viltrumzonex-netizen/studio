@@ -1,11 +1,14 @@
-import { transactions } from "@/lib/mock-data";
+'use client';
+
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowDownLeft, ArrowUpRight, PlusCircle } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, PlusCircle, ShoppingBag } from "lucide-react";
 import { format } from 'date-fns';
 import { cn } from "@/lib/utils";
 import SendReceiveDialog from "@/components/transactions/send-receive-dialog";
+import { useWallet } from "@/hooks/use-wallet";
 
 export default function TransactionsPage() {
+    const { transactions } = useWallet();
     return (
         <div className="container mx-auto p-4 md:p-8 space-y-6">
             <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -22,21 +25,28 @@ export default function TransactionsPage() {
                         {transactions.map(tx => {
                             const isSent = tx.type === 'sent';
                             const isTopUp = tx.type === 'top-up';
+                            const isStorePurchase = tx.type === 'expense';
+                            
                             const icon = isTopUp 
                                 ? <PlusCircle className="w-5 h-5 text-primary"/> 
+                                : isStorePurchase
+                                ? <ShoppingBag className="w-5 h-5 text-accent"/>
                                 : (isSent ? <ArrowUpRight className="w-5 h-5 text-accent"/> : <ArrowDownLeft className="w-5 h-5 text-primary"/>);
+                            
                             const iconBg = isTopUp 
                                 ? "bg-primary/20" 
-                                : (isSent ? "bg-accent/20" : "bg-primary/20");
+                                : (isSent || isStorePurchase ? "bg-accent/20" : "bg-primary/20");
                             
                             let title = '';
                             if (isTopUp) {
                                 title = `Recarga de ${tx.from}`;
                             } else if (isSent) {
-                                title = `Enviado ${tx.coin.symbol}`;
+                                title = `Enviado a ${tx.address}`;
+                            } else if (isStorePurchase) {
+                                title = `Canje: ${tx.details}`;
                             }
                             else {
-                                title = `Recibido ${tx.coin.symbol}`;
+                                title = `Recibido de ${tx.address}`;
                             }
 
                             return (
@@ -52,7 +62,7 @@ export default function TransactionsPage() {
                                     </div>
                                     <div className="text-right">
                                         <p className="font-semibold">
-                                            {isSent ? '-' : '+'} {tx.amount} {tx.coin.symbol}
+                                            {isSent || isStorePurchase ? '-' : '+'} {tx.amount} {tx.coin.symbol}
                                         </p>
                                         <p className="text-sm text-muted-foreground">
                                             ${tx.usdValue.toLocaleString('en-US')}

@@ -1,12 +1,4 @@
-
-export type Coin = {
-    id: string;
-    name: string;
-    symbol: string;
-    amount: number;
-    usdValue: number;
-    iconUrl: string;
-};
+import type { Coin, Transaction } from './types';
 
 // --- New Economy Constants ---
 export const TOTAL_SUPPLY = 500;
@@ -22,17 +14,6 @@ export const walletCoins: Coin[] = [
         iconUrl: '/viltrum-coin.png',
     },
 ];
-
-export type Transaction = {
-    id: string;
-    type: 'sent' | 'received' | 'top-up';
-    coin: Coin;
-    amount: number;
-    usdValue: number;
-    date: Date;
-    address?: string;
-    from?: string;
-}
 
 export const transactions: Transaction[] = [
     {
@@ -72,9 +53,3 @@ export const transactions: Transaction[] = [
         from: 'Admin'
     },
 ];
-
-export const totalBalance = walletCoins.reduce((acc, coin) => acc + coin.usdValue, 0);
-
-// For mock purposes, we assume the circulating supply is the sum of coins in wallets
-// In a real DB, you'd query the sum of all users' balances.
-export const circulatingSupply = walletCoins.reduce((acc, coin) => acc + coin.amount, 0);

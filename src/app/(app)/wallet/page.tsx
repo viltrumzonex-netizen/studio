@@ -1,15 +1,14 @@
 'use client';
 
-import { walletCoins } from "@/lib/mock-data";
 import CoinCard from "@/components/wallet/coin-card";
 import { useSettings } from "@/hooks/use-settings";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
-import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
 import RechargeDialog from "@/components/wallet/recharge-dialog";
+import { useWallet } from "@/hooks/use-wallet";
 
 export default function WalletPage() {
     const { titleSize } = useSettings();
+    const { walletCoins } = useWallet();
 
     return (
         <div className="container mx-auto p-4 md:p-8 space-y-6 flex flex-col h-full">

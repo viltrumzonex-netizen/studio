@@ -1,8 +1,7 @@
 'use client';
 
-import { transactions, circulatingSupply, TOTAL_SUPPLY } from "@/lib/mock-data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, Package, PackageCheck, PackageX } from "lucide-react";
+import { PlusCircle, Package, PackageCheck, PackageX, ShoppingBag } from "lucide-react";
 import { format } from 'date-fns';
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
@@ -10,10 +9,13 @@ import Image from "next/image";
 import { useSettings } from "@/hooks/use-settings";
 import BalanceCard from "@/components/dashboard/balance-card";
 import { Progress } from "@/components/ui/progress";
+import { TOTAL_SUPPLY } from "@/lib/mock-data";
+import { useWallet } from "@/hooks/use-wallet";
 
 export default function DashboardPage() {
     const { user } = useAuth();
     const { titleSize } = useSettings();
+    const { transactions, circulatingSupply } = useWallet();
     const circulationPercentage = (circulatingSupply / TOTAL_SUPPLY) * 100;
     
     return (
@@ -78,25 +80,28 @@ export default function DashboardPage() {
                             {transactions.slice(0, 3).map(tx => {
                                 const isSent = tx.type === 'sent';
                                 const isTopUp = tx.type === 'top-up';
-                                const iconColor = isSent ? "text-accent" : "text-primary";
-                                const sign = isSent ? '-' : '+';
+                                const isStorePurchase = tx.type === 'expense';
+                                const iconColor = isSent || isStorePurchase ? "text-accent" : "text-primary";
+                                const sign = isSent || isStorePurchase ? '-' : '+';
                                 
                                 let title = '';
                                 if (isTopUp) {
                                     title = `Recarga de ${tx.from}`;
                                 } else if (isSent) {
                                     title = `Enviado ${tx.coin.symbol}`;
-                                }
-                                else {
+                                } else if(isStorePurchase) {
+                                    title = `Canje: ${tx.details}`;
+                                } else {
                                     title = `Recibido ${tx.coin.symbol}`;
                                 }
-
 
                                 return (
                                     <li key={tx.id} className="flex items-center justify-between">
                                         <div className="flex items-center gap-4">
                                             <div className={"flex items-center justify-center w-12 h-12"}>
-                                                {isTopUp ? <PlusCircle className={cn("w-8 h-8", iconColor)} /> : <Image src={tx.coin.iconUrl} alt={tx.coin.name} width={40} height={40} /> }
+                                                {isTopUp && <PlusCircle className={cn("w-8 h-8", iconColor)} />}
+                                                {(isSent || isStorePurchase) && <ShoppingBag className={cn("w-8 h-8", iconColor)} />}
+                                                {tx.type === 'received' && <Image src={tx.coin.iconUrl} alt={tx.coin.name} width={40} height={40} /> }
                                             </div>
                                             <div>
                                                 <p className="font-semibold capitalize">{title}</p>

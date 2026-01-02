@@ -9,13 +9,14 @@ export type Coin = {
 
 export type Transaction = {
     id: string;
-    type: 'sent' | 'received' | 'top-up';
+    type: 'sent' | 'received' | 'top-up' | 'expense';
     coin: Coin;
     amount: number;
     usdValue: number;
     date: Date;
     address?: string;
     from?: string;
+    details?: string; // For store purchases, etc.
 }
 
 export type RechargeRequest = {
