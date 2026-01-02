@@ -14,7 +14,6 @@ import { useWallet } from "@/hooks/use-wallet";
 
 export default function DashboardPage() {
     const { user } = useAuth();
-    const { titleSize } = useSettings();
     const { transactions, circulatingSupply } = useWallet();
     const circulationPercentage = (circulatingSupply / TOTAL_SUPPLY) * 100;
     
@@ -23,8 +22,7 @@ export default function DashboardPage() {
             <header>
                 {user && <p className="text-lg text-muted-foreground">Bienvenido de nuevo, {user.displayName}</p>}
                 <h1 
-                    className="font-bold font-headline text-glow mt-1"
-                    style={{ fontSize: `${titleSize}px` }}
+                    className="text-4xl font-bold font-headline text-glow mt-1"
                 >
                     Panel Principal
                 </h1>

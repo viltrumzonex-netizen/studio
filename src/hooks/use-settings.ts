@@ -4,12 +4,6 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
 interface SettingsState {
-  iconSize: number;
-  setIconSize: (size: number) => void;
-  titleSize: number;
-  setTitleSize: (size: number) => void;
-  balanceSize: number;
-  setBalanceSize: (size: number) => void;
   exchangeRate: number;
   setExchangeRate: (rate: number) => void;
 }
@@ -17,12 +11,6 @@ interface SettingsState {
 const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
-      iconSize: 100, // Default icon size
-      setIconSize: (size) => set({ iconSize: size }),
-      titleSize: 36, // Default page title size
-      setTitleSize: (size) => set({ titleSize: size }),
-      balanceSize: 48, // Default balance text size
-      setBalanceSize: (size) => set({ balanceSize: size }),
       exchangeRate: 36.5, // Default exchange rate
       setExchangeRate: (rate) => set({ exchangeRate: rate }),
     }),
@@ -38,9 +26,6 @@ const useSettingsStore = create<SettingsState>()(
 import { useState, useEffect } from 'react';
 
 const defaultSettings = {
-    iconSize: 100,
-    titleSize: 36,
-    balanceSize: 48,
     exchangeRate: 36.5,
 };
 
@@ -56,9 +41,6 @@ export const useSettings = () => {
     ? storedSettings
     : {
         ...defaultSettings,
-        setIconSize: () => {},
-        setTitleSize: () => {},
-        setBalanceSize: () => {},
         setExchangeRate: () => {},
       };
 };
