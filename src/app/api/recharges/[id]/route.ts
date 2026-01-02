@@ -2,11 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
 import type { PoolConnection } from 'mysql2/promise';
+import { getServerSession } from '@/lib/session';
+import { VTC_SYMBOL } from '@/lib/constants';
 
 // PATCH /api/recharges/[id] - Update a recharge request status
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   let connection: PoolConnection | null = null;
   try {
+    const session = await getServerSession(req);
+    if (!session || session.role !== 'admin') {
+      return NextResponse.json({ message: 'Acceso no autorizado.' }, { status: 403 });
+    }
+
     const { id } = params;
     const { status } = await req.json();
 
@@ -28,13 +35,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         return NextResponse.json({ message: 'Esta solicitud ya ha sido procesada.' }, { status: 409 });
     }
 
-    // Update the request status
+    // Update the request status first
     await connection.query('UPDATE recharge_requests SET status = ? WHERE id = ?', [status, id]);
     
+    // If approved, handle the balance transfer from the system wallet
     if (status === 'approved') {
         const request = existingRequest[0];
         
-        // Get exchange rate from the database
         const [settings]: any = await connection.query("SELECT setting_value FROM settings WHERE setting_key = 'exchange_rate'");
         if (settings.length === 0) {
             await connection.rollback();
@@ -48,13 +55,32 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
         const vtcAmount = parseFloat(request.amountBs) / VTC_EXCHANGE_RATE;
 
-        // Update user's balance
+        // Lock system wallet row
+        const [systemWalletResult]: any = await connection.query('SELECT * FROM system_wallet WHERE currency_symbol = ? FOR UPDATE', [VTC_SYMBOL]);
+        if (systemWalletResult.length === 0) {
+            await connection.rollback();
+            throw new Error('Billetera del sistema no encontrada.');
+        }
+        const systemWallet = systemWalletResult[0];
+
+        if (systemWallet.uncirculated_balance < vtcAmount) {
+            await connection.rollback();
+            return NextResponse.json({ message: 'Fondos insuficientes en la billetera del sistema para completar la recarga.' }, { status: 500 });
+        }
+
+        // 1. Debit from system wallet
+        await connection.query(
+            'UPDATE system_wallet SET uncirculated_balance = uncirculated_balance - ? WHERE currency_symbol = ?',
+            [vtcAmount, VTC_SYMBOL]
+        );
+
+        // 2. Credit user's wallet
         await connection.query(
             'UPDATE users SET vtc_balance = vtc_balance + ? WHERE id = ?',
             [vtcAmount, request.userId]
         );
 
-        // Create a transaction record
+        // 3. Create a transaction record for the user
         await connection.query(
             'INSERT INTO transactions (id, userId, type, amount_vtc, description) VALUES (?, ?, ?, ?, ?)',
             [`TXN-${uuidv4()}`, request.userId, 'top-up', vtcAmount, `Recarga aprobada por ${request.amountBs} Bs.`]
@@ -68,7 +94,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   } catch (error) {
     if(connection) await connection.rollback();
     console.error('[API_RECHARGE_UPDATE_ERROR]', error);
-    return NextResponse.json({ message: 'Error interno del servidor.' }, { status: 500 });
+    // Provide a more specific error message if it's a known error type
+    const errorMessage = error instanceof Error ? error.message : 'Error interno del servidor.';
+    return NextResponse.json({ message: errorMessage }, { status: 500 });
   } finally {
       if(connection) connection.release();
   }
