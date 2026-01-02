@@ -1,18 +1,17 @@
 'use client';
 
-import { type ReactNode, useEffect } from 'react';
+import { type ReactNode } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import BottomNav from '@/components/shared/bottom-nav';
 import Sidebar from '@/components/shared/sidebar';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useWallet } from '@/hooks/use-wallet';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
-  const { user, loading } = useAuth();
-  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+  const { loading: walletLoading } = useWallet();
 
-  // On initial render and when auth state changes, this logic determines what to show.
-  // It relies on the useAuth hook to handle session logic.
+  const loading = authLoading || walletLoading;
 
   // While loading, show a full-screen loader.
   // This prevents content flashing and ensures we know the user's status before rendering.
