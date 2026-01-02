@@ -1,129 +1,109 @@
--- Base de datos: `viltrum_db`
+-- Base de datos: `viltrum-wallet`
 --
--- Este script SQL crea toda la estructura de la base de datos necesaria para la aplicación Viltrum Wallet.
--- Ejecútalo en tu cliente de MySQL o en la herramienta de base de datos que prefieras (como phpMyAdmin) para configurar las tablas.
+-- Estructura de la tabla para la tabla `users`
+--
+DROP TABLE IF EXISTS `users`;
+CREATE TABLE `users` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `email` VARCHAR(255) NOT NULL UNIQUE,
+  `password` VARCHAR(255) NOT NULL,
+  `displayName` VARCHAR(255) NOT NULL,
+  `role` ENUM('user','admin') NOT NULL DEFAULT 'user',
+  `vtc_balance` DECIMAL(15,4) NOT NULL DEFAULT 0.0000,
+  `createdAt` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
 
 --
--- Estructura de la tabla para `users`
--- Almacena la información de los usuarios, su rol y su saldo.
+-- Estructura de la tabla para la tabla `system_wallet`
 --
-CREATE TABLE IF NOT EXISTS `users` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `email` varchar(255) NOT NULL,
-  `password` varchar(255) NOT NULL,
-  `displayName` varchar(255) NOT NULL,
-  `vtc_balance` decimal(20,8) NOT NULL DEFAULT 0.00000000,
-  `role` enum('user','admin') NOT NULL DEFAULT 'user',
-  `createdAt` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `email` (`email`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Estructura de la tabla para `system_wallet`
--- Actúa como el "banco central". Almacena el suministro total y el saldo no circulante.
---
-CREATE TABLE IF NOT EXISTS `system_wallet` (
-  `currency_symbol` varchar(10) NOT NULL,
-  `total_supply` decimal(20,8) NOT NULL,
-  `uncirculated_balance` decimal(20,8) NOT NULL,
+DROP TABLE IF EXISTS `system_wallet`;
+CREATE TABLE `system_wallet` (
+  `currency_symbol` VARCHAR(10) NOT NULL,
+  `total_supply` DECIMAL(20,4) NOT NULL,
+  `uncirculated_balance` DECIMAL(20,4) NOT NULL,
   PRIMARY KEY (`currency_symbol`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Volcado de datos para la tabla `system_wallet`
--- Inicializa la billetera del sistema con el suministro total de VTC.
 --
 INSERT INTO `system_wallet` (`currency_symbol`, `total_supply`, `uncirculated_balance`) VALUES
-('VTC', 500000.00000000, 500000.00000000)
-ON DUPLICATE KEY UPDATE 
-`total_supply` = VALUES(`total_supply`), 
-`uncirculated_balance` = VALUES(`uncirculated_balance`);
+('VTC', 500000.0000, 500000.0000);
 
 -- --------------------------------------------------------
 
 --
--- Estructura de la tabla para `recharge_requests`
--- Almacena las solicitudes de recarga pendientes de aprobación por un administrador.
+-- Estructura de la tabla para la tabla `recharge_requests`
 --
-CREATE TABLE IF NOT EXISTS `recharge_requests` (
-  `id` varchar(255) NOT NULL,
-  `userId` int(11) NOT NULL,
-  `amountBs` decimal(20,2) NOT NULL,
-  `method` varchar(50) NOT NULL,
-  `reference` varchar(255) NOT NULL,
-  `status` enum('pending','approved','denied') NOT NULL DEFAULT 'pending',
-  `createdAt` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updatedAt` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+DROP TABLE IF EXISTS `recharge_requests`;
+CREATE TABLE `recharge_requests` (
+  `id` VARCHAR(255) NOT NULL,
+  `userId` INT(11) NOT NULL,
+  `amountBs` DECIMAL(15,2) NOT NULL,
+  `method` ENUM('Pago Móvil','Zinli','Binance') NOT NULL,
+  `reference` VARCHAR(255) NOT NULL,
+  `status` ENUM('pending','approved','denied') NOT NULL DEFAULT 'pending',
+  `createdAt` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `userId` (`userId`),
-  CONSTRAINT `recharge_requests_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  CONSTRAINT `recharge_requests_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
 
 --
--- Estructura de la tabla para `store_items`
--- Almacena los productos disponibles en la tienda para canjear con VTC.
+-- Estructura de la tabla para la tabla `store_items`
 --
-CREATE TABLE IF NOT EXISTS `store_items` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(255) NOT NULL,
-  `description` text DEFAULT NULL,
-  `price` decimal(20,8) NOT NULL,
-  `stock` int(11) NOT NULL DEFAULT 0,
-  `createdAt` timestamp NOT NULL DEFAULT current_timestamp(),
+DROP TABLE IF EXISTS `store_items`;
+CREATE TABLE `store_items` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `name` VARCHAR(255) NOT NULL,
+  `description` TEXT,
+  `price` DECIMAL(15,4) NOT NULL,
+  `stock` INT(11) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
 -- Volcado de datos para la tabla `store_items`
--- Añade algunos productos de ejemplo a la tienda.
 --
-INSERT INTO `store_items` (`id`, `name`, `description`, `price`, `stock`, `createdAt`) VALUES
-(1, 'Suscripción Premium 1 Mes', 'Acceso a funciones exclusivas durante 30 días.', 10.00000000, 999, '2024-05-22 19:40:48'),
-(2, 'Paquete de Stickers', 'Colección de stickers exclusivos para la comunidad.', 5.00000000, 999, '2024-05-22 19:40:48'),
-(3/docs/db-schema-update-bank.sql', 'Créditos para la Plataforma', 'Un paquete de 50 créditos para usar en servicios asociados.', 25.00000000, 999, '2024-05-22 19:40:48')
-ON DUPLICATE KEY UPDATE `name`=VALUES(`name`), `description`=VALUES(`description`), `price`=VALUES(`price`), `stock`=VALUES(`stock`);
+INSERT INTO `store_items` (`id`, `name`, `description`, `price`, `stock`) VALUES
+(1, 'Créditos para la Plataforma', 'Un paquete de 50 créditos para usar en diversas funciones de la plataforma.', 50.0000, 1000),
+(2, 'Suscripción Premium (1 Mes)', 'Acceso a todas las funciones premium de la aplicación durante 30 días.', 150.0000, 500),
+(3, 'Paquete de Stickers Exclusivos', 'Obtén un set de stickers digitales únicos para usar en tus chats.', 25.0000, 2000);
 
 -- --------------------------------------------------------
 
 --
--- Estructura de la tabla para `transactions`
--- Registra todos los movimientos (recargas, gastos) de VTC para cada usuario.
+-- Estructura de la tabla para la tabla `transactions`
 --
-CREATE TABLE IF NOT EXISTS `transactions` (
-  `id` varchar(255) NOT NULL,
-  `userId` int(11) NOT NULL,
-  `type` enum('top-up','expense') NOT NULL,
-  `amount_vtc` decimal(20,8) NOT NULL,
-  `description` text DEFAULT NULL,
-  `createdAt` timestamp NOT NULL DEFAULT current_timestamp(),
+DROP TABLE IF EXISTS `transactions`;
+CREATE TABLE `transactions` (
+  `id` VARCHAR(255) NOT NULL,
+  `userId` INT(11) NOT NULL,
+  `type` ENUM('top-up','expense') NOT NULL,
+  `amount_vtc` DECIMAL(15,4) NOT NULL,
+  `description` VARCHAR(255) DEFAULT NULL,
+  `createdAt` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `userId` (`userId`),
-  CONSTRAINT `transactions_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
+  CONSTRAINT `transactions_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
--- Estructura de la tabla para `settings`
--- Almacena configuraciones globales de la aplicación, como la tasa de cambio.
+-- Disparadores `transactions`
 --
-CREATE TABLE IF NOT EXISTS `settings` (
-  `setting_key` varchar(255) NOT NULL,
-  `setting_value` text DEFAULT NULL,
-  PRIMARY KEY (`setting_key`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Volcado de datos para la tabla `settings`
--- Inicializa la tasa de cambio por defecto.
---
-INSERT INTO `settings` (`setting_key`, `setting_value`) VALUES
-('exchange_rate', '36.5')
-ON DUPLICATE KEY UPDATE `setting_value` = VALUES(`setting_value`);
+DROP TRIGGER IF EXISTS `after_recharge_approval`;
+DELIMITER $$
+CREATE TRIGGER `after_recharge_approval` AFTER UPDATE ON `recharge_requests` FOR EACH ROW BEGIN
+    IF NEW.status = 'approved' AND OLD.status <> 'approved' THEN
+        -- No se inserta aquí. La lógica de transacción se maneja en el API.
+        -- Este trigger podría usarse para logs si se quisiera.
+    END IF;
+END
+$$
+DELIMITER ;
