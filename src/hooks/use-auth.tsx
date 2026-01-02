@@ -31,7 +31,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  // Check user session on initial load and listen for storage changes
   useEffect(() => {
     const checkUserSession = () => {
       setLoading(true);
@@ -53,7 +52,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     checkUserSession();
     
-    // Listen for changes in other tabs
     const handleStorageChange = (event: StorageEvent) => {
         if (event.key === 'viltrum_user') {
             checkUserSession();
@@ -70,8 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const handleAuthSuccess = useCallback((userData: User) => {
       setUser(userData);
       localStorage.setItem('viltrum_user', JSON.stringify(userData));
-      document.cookie = `viltrum_user=${encodeURIComponent(JSON.stringify(userData))}; path=/; max-age=${60 * 60 * 24 * 7}`; // 7 days
-      router.push('/dashboard'); // Use Next.js router for smooth client-side navigation
+      router.push('/dashboard'); 
   }, [router]);
 
   const login = async (email: string, password: string) => {
@@ -105,10 +102,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    setUser(null);
-    localStorage.removeItem('viltrum_user');
-    document.cookie = 'viltrum_user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-    router.push('/');
+    try {
+        await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (error) {
+        console.error("Failed to call logout API", error);
+    } finally {
+        setUser(null);
+        localStorage.removeItem('viltrum_user');
+        router.push('/');
+    }
   };
 
   const value = { user, loading, login, register, logout };

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import type { User } from '@/hooks/use-auth';
+import { serialize } from 'cookie';
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,15 +18,12 @@ export async function POST(req: NextRequest) {
     // Check if user already exists
     const existingUsers: any = await query('SELECT id FROM users WHERE email = ?', [email]);
     
-    // CRITICAL FIX: Check if existingUsers array has content
     if (existingUsers && existingUsers.length > 0) {
         return NextResponse.json({ message: 'El correo electrónico ya está en uso.' }, { status: 409 });
     }
     
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Insert new user
     const result: any = await query(
       'INSERT INTO users (email, password, displayName) VALUES (?, ?, ?)',
       [email, hashedPassword, displayName]
@@ -41,10 +39,21 @@ export async function POST(req: NextRequest) {
         uid: newUserId.toString(),
         email,
         displayName,
-        role: 'user', // Default role for new users
+        role: 'user', 
     };
 
-    return NextResponse.json({ message: 'Usuario registrado exitosamente', user }, { status: 201 });
+    // Serialize the user data and set it in an httpOnly cookie
+    const sessionCookie = serialize('viltrum_session', JSON.stringify(user), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 60 * 60 * 24 * 7, // 1 week
+      path: '/',
+    });
+
+    const response = NextResponse.json({ message: 'Usuario registrado exitosamente', user }, { status: 201 });
+    response.headers.set('Set-Cookie', sessionCookie);
+
+    return response;
 
   } catch (error) {
     console.error('[API_REGISTER_ERROR]', error);

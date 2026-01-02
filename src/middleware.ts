@@ -2,12 +2,12 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
  
 export function middleware(request: NextRequest) {
-  const userCookie = request.cookies.get('viltrum_user');
-  const isLoggedIn = userCookie !== undefined;
+  // Check for the new httpOnly session cookie
+  const sessionCookie = request.cookies.get('viltrum_session');
+  const isLoggedIn = sessionCookie !== undefined;
   
   const { pathname } = request.nextUrl;
 
-  // Rutas del "app" que requieren autenticación
   const protectedRoutes = [
       '/dashboard', 
       '/wallet', 
@@ -15,27 +15,23 @@ export function middleware(request: NextRequest) {
       '/store', 
       '/settings', 
       '/admin'
-    ];
+  ];
 
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
 
-  // Si el usuario no está logueado e intenta acceder a una ruta protegida,
-  // redirigirlo a la página de login.
   if (!isLoggedIn && isProtectedRoute) {
-    return NextResponse.redirect(new URL('/', request.url))
+    const absoluteURL = new URL('/', request.url);
+    return NextResponse.redirect(absoluteURL.toString());
   }
 
-  // Si el usuario está logueado e intenta acceder a la página de login ('/'),
-  // redirigirlo al dashboard.
   if (isLoggedIn && pathname === '/') {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    const absoluteURL = new URL('/dashboard', request.url);
+    return NextResponse.redirect(absoluteURL.toString());
   }
 
-  // Si no se cumple ninguna de las condiciones anteriores, permite que la petición continúe.
   return NextResponse.next();
 }
  
-// Configuración para que el middleware se ejecute en las rutas correctas.
 export const config = {
   matcher: [
     /*
@@ -44,7 +40,9 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - db-test (the database test page)
+     * - any files with an extension (e.g. .png)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.png$).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|db-test|.*\\..*).*)',
   ],
 }

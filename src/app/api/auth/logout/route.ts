@@ -1,0 +1,17 @@
+import { NextResponse } from 'next/server';
+import { serialize } from 'cookie';
+
+export async function POST() {
+  // Expire the cookie to log the user out
+  const sessionCookie = serialize('viltrum_session', '', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: -1, // Expire immediately
+    path: '/',
+  });
+
+  const response = NextResponse.json({ message: 'Cierre de sesión exitoso' }, { status: 200 });
+  response.headers.set('Set-Cookie', sessionCookie);
+
+  return response;
+}

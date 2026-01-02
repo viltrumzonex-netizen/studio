@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import type { User } from '@/hooks/use-auth';
 import bcrypt from 'bcryptjs';
+import { serialize } from 'cookie';
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,7 +17,6 @@ export async function POST(req: NextRequest) {
       [email]
     );
 
-    // CRITICAL FIX: Check if results array is empty or undefined
     if (!results || results.length === 0) {
       return NextResponse.json({ message: 'Credenciales inválidas.' }, { status: 401 });
     }
@@ -30,13 +30,24 @@ export async function POST(req: NextRequest) {
     }
 
     const user: User = {
-      uid: String(dbUser.id), // Ensure UID is always a string
+      uid: String(dbUser.id),
       email: dbUser.email,
       displayName: dbUser.displayName,
       role: dbUser.role,
     };
+    
+    // Serialize the user data and set it in an httpOnly cookie
+    const sessionCookie = serialize('viltrum_session', JSON.stringify(user), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 60 * 60 * 24 * 7, // 1 week
+      path: '/',
+    });
 
-    return NextResponse.json({ message: 'Inicio de sesión exitoso', user }, { status: 200 });
+    const response = NextResponse.json({ message: 'Inicio de sesión exitoso', user }, { status: 200 });
+    response.headers.set('Set-Cookie', sessionCookie);
+
+    return response;
 
   } catch (error) {
     console.error('[API_LOGIN_ERROR]', error);
