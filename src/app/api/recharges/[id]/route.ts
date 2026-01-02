@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import dbPool from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
+import type { PoolConnection } from 'mysql2/promise';
 
 // PATCH /api/recharges/[id] - Update a recharge request status
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const connection = await (await import('@/lib/db')).default.getConnection();
+  let connection: PoolConnection | null = null;
   try {
     const { id } = params;
     const { status } = await req.json();
@@ -13,6 +14,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       return NextResponse.json({ message: 'ID de solicitud y estado válido son requeridos.' }, { status: 400 });
     }
     
+    connection = await dbPool.getConnection();
     await connection.beginTransaction();
 
     const [existingRequest]: any = await connection.query('SELECT * FROM recharge_requests WHERE id = ? FOR UPDATE', [id]);
@@ -35,10 +37,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         // Get exchange rate from the database
         const [settings]: any = await connection.query("SELECT setting_value FROM settings WHERE setting_key = 'exchange_rate'");
         if (settings.length === 0) {
+            await connection.rollback();
             throw new Error('Tasa de cambio no configurada.');
         }
         const VTC_EXCHANGE_RATE = parseFloat(settings[0].setting_value);
         if (isNaN(VTC_EXCHANGE_RATE) || VTC_EXCHANGE_RATE <= 0) {
+            await connection.rollback();
             throw new Error('La tasa de cambio configurada es inválida.');
         }
 
@@ -62,10 +66,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ message: `Solicitud ${id} ha sido actualizada a ${status}.` }, { status: 200 });
 
   } catch (error) {
-    await connection.rollback();
+    if(connection) await connection.rollback();
     console.error('[API_RECHARGE_UPDATE_ERROR]', error);
     return NextResponse.json({ message: 'Error interno del servidor.' }, { status: 500 });
   } finally {
-      connection.release();
+      if(connection) connection.release();
   }
 }

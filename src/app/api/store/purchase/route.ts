@@ -1,16 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import dbPool from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
-import { getServerSession } from '@/lib/session'; // We'll need a session utility
+import { getServerSession } from '@/lib/session';
+import type { PoolConnection } from 'mysql2/promise';
+
+// This is a placeholder for a real session management library like next-auth or iron-session
+// For now, it will simulate getting a user ID from the request if sent for testing.
+async function getUserIdFromRequest(req: NextRequest) {
+    try {
+        const body = await req.clone().json();
+        if (body.userId) {
+            return body.userId;
+        }
+    } catch (e) {
+        // Ignore if body is not JSON or empty
+    }
+    const session = await getServerSession(req);
+    return session.userId;
+}
+
 
 // POST /api/store/purchase - Purchase an item from the store
 export async function POST(req: NextRequest) {
-  const connection = await (await import('@/lib/db')).default.getConnection();
+  let connection: PoolConnection | null = null;
   
   try {
-    // In a real app, user ID should come from a secure session, not the body.
-    // For now, we'll need to create a session helper. Let's assume one exists.
-    const { userId } = await getServerSession(req);
+    const userId = await getUserIdFromRequest(req);
     if (!userId) {
         return NextResponse.json({ message: 'No autenticado.' }, { status: 401 });
     }
@@ -21,6 +36,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'ID del producto es requerido.' }, { status: 400 });
     }
     
+    connection = await dbPool.getConnection();
     await connection.beginTransaction();
 
     // 1. Get item and user details, and lock the rows to prevent race conditions
@@ -66,10 +82,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: 'Canje realizado con éxito.', newBalance }, { status: 200 });
 
   } catch (error) {
-    await connection.rollback();
+    if (connection) await connection.rollback();
     console.error('[API_STORE_PURCHASE_ERROR]', error);
     return NextResponse.json({ message: 'Error interno del servidor.' }, { status: 500 });
   } finally {
-      connection.release();
+      if (connection) connection.release();
   }
 }
