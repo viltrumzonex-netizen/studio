@@ -31,6 +31,10 @@ export async function POST(req: NextRequest) {
       [email, hashedPassword, displayName]
     );
     
+    if (!result.insertId) {
+        throw new Error('No se pudo crear el usuario.');
+    }
+    
     const newUserId = result.insertId;
 
     const user: User = {

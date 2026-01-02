@@ -67,12 +67,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   }, []);
 
-  const handleAuthSuccess = (userData: User) => {
+  const handleAuthSuccess = useCallback((userData: User) => {
       setUser(userData);
       localStorage.setItem('viltrum_user', JSON.stringify(userData));
       document.cookie = `viltrum_user=${encodeURIComponent(JSON.stringify(userData))}; path=/; max-age=${60 * 60 * 24 * 7}`; // 7 days
       router.push('/dashboard'); // Use Next.js router for smooth client-side navigation
-  }
+  }, [router]);
 
   const login = async (email: string, password: string) => {
     const response = await fetch('/api/auth/login', {
