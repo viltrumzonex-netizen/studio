@@ -18,8 +18,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     }
   }, [user, loading, router]);
 
-  // Show a loader while authentication is in progress.
-  if (loading) {
+  // Show a loader while authentication is in progress or if there's no user yet.
+  if (loading || !user) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
          <div className="w-full max-w-md space-y-6 flex flex-col items-center">
@@ -42,13 +42,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  // If there's a user, render the app layout.
-  // If there's no user, this will be briefly rendered before the useEffect redirects.
-  // Rendering null or a minimal loader here can prevent a flash of the layout.
-  if (!user) {
-    return null; 
-  }
-
+  // If loading is finished and there is a user, render the app layout.
   return (
     <div className="flex min-h-screen bg-background">
         <Sidebar />

@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, type ReactNode, useEffect } from 'react';
+import { createContext, useContext, useState, type ReactNode, useEffect, useCallback } from 'react';
 
 export type User = {
   uid: string;
@@ -30,20 +30,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('viltrum_user');
-    if (storedUser) {
+    // This function runs once on mount to check for an existing session.
+    const checkUserSession = () => {
         try {
-            setUser(JSON.parse(storedUser));
+            const storedUser = localStorage.getItem('viltrum_user');
+            if (storedUser) {
+                setUser(JSON.parse(storedUser));
+            }
         } catch (e) {
             console.error("Failed to parse user from localStorage", e);
             localStorage.removeItem('viltrum_user');
+        } finally {
+            setLoading(false);
         }
-    }
-    setLoading(false);
+    };
+    
+    checkUserSession();
   }, []);
 
 
   const login = async (email: string, password: string) => {
+    setLoading(true);
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -61,11 +68,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('viltrum_user', JSON.stringify(data.user));
 
     } catch (error: any) {
+      // Re-throw the error so the form can catch it and display a toast
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
   
   const register = async (email: string, password: string, displayName: string) => {
+    setLoading(true);
     try {
         const response = await fetch('/api/auth/register', {
             method: 'POST',
@@ -83,7 +94,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem('viltrum_user', JSON.stringify(data.user));
 
     } catch (error: any) {
+        // Re-throw the error so the form can catch it and display a toast
         throw error;
+    } finally {
+        setLoading(false);
     }
   };
 
