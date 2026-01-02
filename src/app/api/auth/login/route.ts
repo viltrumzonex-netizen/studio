@@ -22,6 +22,7 @@ export async function POST(req: NextRequest) {
 
     const dbUser = results[0];
 
+    // Corrected order: bcrypt.compare(plain_password, hash)
     const passwordMatches = await bcrypt.compare(password, dbUser.password);
 
     if (!passwordMatches) {
