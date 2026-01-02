@@ -2,25 +2,16 @@
 
 import { createContext, useContext, useState, type ReactNode, useEffect } from 'react';
 
-// Mock users for demo purposes
-const MOCK_ADMIN_USER = {
-  uid: 'admin-user-id-00001',
-  email: 'admin@ejemplo.com',
-  displayName: 'Admin',
-  role: 'admin',
+// This user type should ideally match the structure from your database
+export type User = {
+  uid: string;
+  email: string;
+  displayName: string;
+  role: 'admin' | 'user';
 };
-
-const MOCK_REGULAR_USER = {
-  uid: 'demo-user-id-12345',
-  email: 'usuario@ejemplo.com',
-  displayName: 'Usuario Demo',
-  role: 'user', // Explicitly 'user'
-};
-
-type MockUser = typeof MOCK_ADMIN_USER | typeof MOCK_REGULAR_USER;
 
 interface AuthContextType {
-  user: MockUser | null;
+  user: User | null;
   loading: boolean;
   login: (email?: string, password?: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -34,28 +25,40 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<MockUser | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // This could be where you verify a token stored in localStorage in the future
     setLoading(false);
   }, []);
 
 
   const login = async (email?: string, password?: string) => {
     setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
 
-    if (email === MOCK_ADMIN_USER.email) {
-      setUser(MOCK_ADMIN_USER);
-    } else if (email === MOCK_REGULAR_USER.email) {
-      setUser(MOCK_REGULAR_USER);
-    } else {
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Error al iniciar sesión.');
+      }
+      
+      // The user data now comes from the database via the API
+      setUser(data.user);
+
+    } catch (error: any) {
+      // Re-throw the error to be caught by the form
+      throw error;
+    } finally {
       setLoading(false);
-      throw new Error("Credenciales inválidas. Intenta con 'admin@ejemplo.com' o 'usuario@ejemplo.com'.");
     }
-
-    setLoading(false);
   };
 
   const logout = async () => {

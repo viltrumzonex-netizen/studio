@@ -16,9 +16,8 @@ import {
 } from '@/components/ui/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Mail, Lock, Info } from 'lucide-react';
+import { Mail, Lock } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Dirección de correo inválida.' }),
@@ -34,7 +33,7 @@ export default function AuthForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: 'usuario@ejemplo.com', // Default to regular user
+      email: 'usuario@ejemplo.com',
       password: 'password',
     },
   });
@@ -42,7 +41,6 @@ export default function AuthForm() {
   const handleAuthAction = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
     try {
-      // Login logic is now handled in useAuth hook based on email
       await login(values.email, values.password);
       toast({ title: 'Inicio de Sesión Exitoso', description: "¡Bienvenido de vuelta!" });
     } catch (error: any) {
@@ -64,15 +62,6 @@ export default function AuthForm() {
       </TabsList>
       
       <div className="space-y-4 glass-card p-6 mt-4 rounded-lg">
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertTitle>Cuentas de Demostración</AlertTitle>
-          <AlertDescription className="text-xs">
-            Admin: <code className="font-mono">admin@ejemplo.com</code><br/>
-            Usuario: <code className="font-mono">usuario@ejemplo.com</code><br/>
-            (Contraseña: <code className="font-mono">password</code>)
-          </AlertDescription>
-        </Alert>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleAuthAction)} className="space-y-6">
             <FormField
