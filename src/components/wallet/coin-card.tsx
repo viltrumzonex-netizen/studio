@@ -1,14 +1,14 @@
 import type { Coin } from "@/lib/types";
 import Image from 'next/image';
 import { cn } from "@/lib/utils";
-import { useSettings } from "@/hooks/use-settings";
+import { useWallet } from "@/hooks/use-wallet";
 
 interface CoinCardProps {
     coin: Coin;
 }
 
 export default function CoinCard({ coin }: CoinCardProps) {
-    const { exchangeRate } = useSettings();
+    const { exchangeRate } = useWallet();
     const vesValue = coin.amount * exchangeRate;
 
     return (

@@ -9,26 +9,40 @@ interface WalletState {
   balance: number;
   transactions: Transaction[];
   circulatingSupply: number;
+  exchangeRate: number;
   loading: boolean;
   refreshWallet: () => void;
   setBalance: (balance: number) => void;
   setTransactions: (transactions: Transaction[]) => void;
+  setExchangeRate: (rate: number) => void;
 }
 
 const useWalletStore = create<WalletState>()((set) => ({
   balance: 0,
   transactions: [],
-  circulatingSupply: 0, // This will be fetched globally
+  circulatingSupply: 0,
+  exchangeRate: 36.5, // Default/initial value
   loading: true,
   refreshWallet: () => { console.log("Placeholder for refresh") },
   setBalance: (balance) => set({ balance }),
   setTransactions: (transactions) => set({ transactions }),
+  setExchangeRate: (rate) => set({ exchangeRate: rate }),
 }));
 
 // Custom hook to handle hydration and data fetching
 export const useWallet = () => {
   const { user } = useAuth();
-  const { balance, transactions, circulatingSupply, loading, setBalance, setTransactions } = useWalletStore();
+  const { 
+    balance, 
+    transactions, 
+    circulatingSupply, 
+    exchangeRate,
+    loading, 
+    setBalance, 
+    setTransactions,
+    setExchangeRate 
+  } = useWalletStore();
+  
   const [hydrated, setHydrated] = useState(false);
 
   const fetchWalletData = useCallback(async () => {
@@ -36,21 +50,33 @@ export const useWallet = () => {
     
     useWalletStore.setState({ loading: true });
     try {
-      const res = await fetch(`/api/wallet/balance?userId=${user.uid}`);
-      const data = await res.json();
-      if (res.ok) {
-        setBalance(data.balance);
-        setTransactions(data.transactions);
+      const walletRes = await fetch(`/api/wallet/balance?userId=${user.uid}`);
+      const walletData = await walletRes.json();
+      if (walletRes.ok) {
+        setBalance(walletData.balance);
+        setTransactions(walletData.transactions);
       } else {
-        throw new Error(data.message || 'Failed to fetch wallet data');
+        throw new Error(walletData.message || 'Failed to fetch wallet data');
       }
+
+      const settingsRes = await fetch('/api/settings');
+      const settingsData = await settingsRes.json();
+      if(settingsRes.ok) {
+        const rateSetting = settingsData.find((s: any) => s.setting_key === 'exchange_rate');
+        if (rateSetting) {
+          setExchangeRate(parseFloat(rateSetting.setting_value));
+        }
+      } else {
+        throw new Error(settingsData.message || 'Failed to fetch settings');
+      }
+
     } catch (error) {
       console.error(error);
       // Handle error (e.g., show toast)
     } finally {
       useWalletStore.setState({ loading: false });
     }
-  }, [user?.uid, setBalance, setTransactions]);
+  }, [user?.uid, setBalance, setTransactions, setExchangeRate]);
 
   useEffect(() => {
     setHydrated(true);
@@ -68,10 +94,9 @@ export const useWallet = () => {
       balance: 0,
       transactions: [],
       circulatingSupply: 0,
+      exchangeRate: 36.5,
       loading: true,
       refreshWallet: () => {},
-      setBalance: () => {},
-      setTransactions: () => {},
   };
 
   if (!hydrated) {
@@ -81,5 +106,5 @@ export const useWallet = () => {
   // Attach the real refresh function to the store instance
   useWalletStore.setState({ refreshWallet });
 
-  return { balance, transactions, circulatingSupply, loading, refreshWallet };
+  return { balance, transactions, circulatingSupply, exchangeRate, loading, refreshWallet };
 };

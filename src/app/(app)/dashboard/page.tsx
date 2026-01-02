@@ -6,15 +6,15 @@ import { format } from 'date-fns';
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import Image from "next/image";
-import { useSettings } from "@/hooks/use-settings";
+import { useWallet } from "@/hooks/use-wallet";
 import BalanceCard from "@/components/dashboard/balance-card";
 import { Progress } from "@/components/ui/progress";
 import { TOTAL_SUPPLY } from "@/lib/constants";
-import { useWallet } from "@/hooks/use-wallet";
+
 
 export default function DashboardPage() {
     const { user } = useAuth();
-    const { transactions, circulatingSupply } = useWallet();
+    const { transactions, circulatingSupply, exchangeRate } = useWallet();
     const circulationPercentage = (circulatingSupply / TOTAL_SUPPLY) * 100;
     
     return (
@@ -101,7 +101,7 @@ export default function DashboardPage() {
                                                 {sign} {tx.amount_vtc} VTC
                                             </p>
                                             <p className="text-sm text-muted-foreground">
-                                                ~{(tx.amount_vtc * useSettings().exchangeRate).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} VES
+                                                ~{(tx.amount_vtc * exchangeRate).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} VES
                                             </p>
                                         </div>
                                     </li>

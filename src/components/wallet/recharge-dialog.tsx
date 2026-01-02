@@ -39,7 +39,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Copy, PlusCircle } from "lucide-react";
-import { useSettings } from '@/hooks/use-settings';
+import { useWallet } from '@/hooks/use-wallet';
 import { useAuth } from '@/hooks/use-auth';
 
 const paymentMethods = [
@@ -77,7 +77,7 @@ const rechargeSchema = z.object({
 
 export default function RechargeDialog() {
   const { toast } = useToast();
-  const { exchangeRate } = useSettings();
+  const { exchangeRate } = useWallet();
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
 

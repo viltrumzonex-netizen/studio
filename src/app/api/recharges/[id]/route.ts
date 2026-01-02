@@ -32,9 +32,16 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (status === 'approved') {
         const request = existingRequest[0];
         
-        // Get exchange rate (in a real app, this might come from a settings table)
-        // For now, we hardcode it, but it should be managed.
-        const VTC_EXCHANGE_RATE = 36.5; // 1 VTC = 36.5 Bs
+        // Get exchange rate from the database
+        const [settings]: any = await connection.query("SELECT setting_value FROM settings WHERE setting_key = 'exchange_rate'");
+        if (settings.length === 0) {
+            throw new Error('Tasa de cambio no configurada.');
+        }
+        const VTC_EXCHANGE_RATE = parseFloat(settings[0].setting_value);
+        if (isNaN(VTC_EXCHANGE_RATE) || VTC_EXCHANGE_RATE <= 0) {
+            throw new Error('La tasa de cambio configurada es inválida.');
+        }
+
         const vtcAmount = parseFloat(request.amountBs) / VTC_EXCHANGE_RATE;
 
         // Update user's balance

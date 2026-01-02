@@ -6,13 +6,11 @@ import { ArrowUpRight, ArrowDownLeft, PlusCircle } from "lucide-react";
 import Link from 'next/link';
 import AnimatedBalance from "@/components/dashboard/animated-balance";
 import Image from "next/image";
-import { useSettings } from "@/hooks/use-settings";
 import { useWallet } from "@/hooks/use-wallet";
 import { VTC_ICON_URL } from '@/lib/constants';
 
 export default function BalanceCard() {
-    const { exchangeRate } = useSettings();
-    const { balance, refreshWallet } = useWallet();
+    const { balance, refreshWallet, exchangeRate } = useWallet();
     
     const vesValue = balance * exchangeRate;
 

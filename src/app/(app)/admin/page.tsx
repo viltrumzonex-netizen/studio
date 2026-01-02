@@ -10,13 +10,28 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { RechargeRequest } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { useSettings } from '@/hooks/use-settings';
 
 export default function AdminPage() {
     const { toast } = useToast();
-    const { exchangeRate, setExchangeRate } = useSettings();
-    const [localRate, setLocalRate] = useState(exchangeRate);
+    const [exchangeRate, setExchangeRate] = useState(0);
     const [rechargeRequests, setRechargeRequests] = useState<RechargeRequest[]>([]);
+
+    const fetchSettings = async () => {
+        try {
+            const response = await fetch('/api/settings');
+            const data = await response.json();
+            if (response.ok) {
+                const rateSetting = data.find((s: any) => s.setting_key === 'exchange_rate');
+                if (rateSetting) {
+                    setExchangeRate(parseFloat(rateSetting.setting_value));
+                }
+            } else {
+                throw new Error(data.message || 'Error al obtener la configuración');
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message });
+        }
+    };
 
     const fetchRechargeRequests = async () => {
         try {
@@ -37,16 +52,34 @@ export default function AdminPage() {
     }
 
     useEffect(() => {
+        fetchSettings();
         fetchRechargeRequests();
     }, []);
 
 
-    const handleRateUpdate = () => {
-        setExchangeRate(localRate);
-        toast({
-            title: 'Tasa Actualizada',
-            description: `La nueva tasa es 1 VTC = ${localRate} Bs.`,
-        });
+    const handleRateUpdate = async () => {
+        try {
+            const response = await fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key: 'exchange_rate', value: exchangeRate.toString() })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Error al actualizar la tasa.');
+            }
+
+            toast({
+                title: 'Tasa Actualizada',
+                description: `La nueva tasa es 1 VTC = ${exchangeRate} Bs.`,
+            });
+             // Re-fetch to confirm
+            fetchSettings();
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message });
+        }
     };
 
     const handleStatusChange = async (id: string, newStatus: 'approved' | 'denied') => {
@@ -96,8 +129,8 @@ export default function AdminPage() {
                             <Input 
                                 id="rate" 
                                 type="number" 
-                                value={localRate}
-                                onChange={(e) => setLocalRate(parseFloat(e.target.value))}
+                                value={exchangeRate}
+                                onChange={(e) => setExchangeRate(parseFloat(e.target.value))}
                                 placeholder="ej., 36.50" 
                             />
                         </div>
