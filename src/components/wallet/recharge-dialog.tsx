@@ -29,10 +29,20 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Copy, PlusCircle } from "lucide-react";
 import { useSettings } from '@/hooks/use-settings';
+import { useWallet } from '@/hooks/use-wallet';
+import { useAuth } from '@/hooks/use-auth';
+import { v4 as uuidv4 } from 'uuid';
 
 const paymentMethods = [
     {
@@ -63,12 +73,15 @@ const rechargeSchema = z.object({
         z.number().positive({ message: "El monto debe ser mayor a 0." })
     ),
     reference: z.string().min(4, { message: "La referencia es muy corta." }),
+    method: z.enum(['Pago Móvil', 'Zinli', 'Binance'], { required_error: "Debes seleccionar un método de pago." }),
 });
 
 
 export default function RechargeDialog() {
   const { toast } = useToast();
   const { exchangeRate } = useSettings();
+  const { addRechargeRequest } = useWallet();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
 
   const form = useForm<z.infer<typeof rechargeSchema>>({
@@ -85,14 +98,28 @@ export default function RechargeDialog() {
   };
 
   const onSubmit = (values: z.infer<typeof rechargeSchema>) => {
-    console.log("Recharge request submitted:", values);
+    if (!user) {
+        toast({ variant: 'destructive', title: "Error", description: "Debes iniciar sesión para recargar." });
+        return;
+    }
+
+    addRechargeRequest({
+        id: `REQ-${uuidv4().slice(0, 8)}`,
+        user: user.email,
+        amountBs: values.amountBs,
+        method: values.method,
+        reference: values.reference,
+        date: new Date(),
+        status: 'pending',
+    });
+    
     toast({
         title: "Solicitud de Recarga Enviada",
         description: "Tu solicitud ha sido enviada y será procesada por un administrador.",
     });
-    // In a real app, you would send this data to your backend.
+
     form.reset();
-    setOpen(false); // Close the dialog on successful submission
+    setOpen(false);
   }
 
   return (
@@ -142,6 +169,28 @@ export default function RechargeDialog() {
                  <h3 className="text-md font-semibold text-center mt-4 mb-2">Notificar Pago</h3>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                        <FormField
+                            control={form.control}
+                            name="method"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Método de Pago Usado</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Selecciona el método que usaste" />
+                                    </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                    <SelectItem value="Pago Móvil">Pago Móvil</SelectItem>
+                                    <SelectItem value="Zinli">Zinli</SelectItem>
+                                    <SelectItem value="Binance">Binance Pay</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
                         <FormField
                             control={form.control}
                             name="amountBs"

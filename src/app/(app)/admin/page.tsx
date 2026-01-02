@@ -11,19 +11,13 @@ import { cn } from "@/lib/utils";
 import type { RechargeRequest } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/hooks/use-settings';
-
-// Mock data, in a real app this would come from your database
-const initialRechargeRequests: RechargeRequest[] = [
-    { id: 'REQ-001', user: 'user1@example.com', amountBs: 500, method: 'Pago Móvil', reference: '012345', date: new Date(), status: 'pending' },
-    { id: 'REQ-002', user: 'user2@example.com', amountBs: 1200.50, method: 'Binance', reference: 'A-54321', date: new Date(), status: 'pending' },
-    { id: 'REQ-003', user: 'user3@example.com', amountBs: 250, method: 'Zinli', reference: 'Z-98765', date: new Date(), status: 'approved' },
-];
+import { useWallet } from '@/hooks/use-wallet';
 
 export default function AdminPage() {
     const { toast } = useToast();
     const { exchangeRate, setExchangeRate } = useSettings();
     const [localRate, setLocalRate] = useState(exchangeRate);
-    const [rechargeRequests, setRechargeRequests] = useState(initialRechargeRequests);
+    const { rechargeRequests, updateRechargeRequest, approveRecharge } = useWallet();
 
     const handleRateUpdate = () => {
         setExchangeRate(localRate);
@@ -34,11 +28,24 @@ export default function AdminPage() {
     };
 
     const handleStatusChange = (id: string, newStatus: 'approved' | 'denied') => {
-        setRechargeRequests(prev => prev.map(req => req.id === id ? { ...req, status: newStatus } : req));
-        toast({
-            title: `Solicitud ${newStatus === 'approved' ? 'Aprobada' : 'Denegada'}`,
-            description: `La solicitud ${id} ha sido actualizada.`,
-        });
+        const request = rechargeRequests.find(req => req.id === id);
+        if (!request) return;
+
+        if (newStatus === 'approved') {
+            const vtcAmount = request.amountBs / exchangeRate;
+            approveRecharge(id, vtcAmount);
+            toast({
+                title: `Solicitud Aprobada`,
+                description: `Se acreditaron ${vtcAmount.toFixed(2)} VTC al usuario.`,
+            });
+        } else {
+            updateRechargeRequest(id, newStatus);
+            toast({
+                variant: 'destructive',
+                title: `Solicitud Denegada`,
+                description: `La solicitud ${id} ha sido denegada.`,
+            });
+        }
     };
 
     return (
