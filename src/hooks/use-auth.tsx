@@ -31,26 +31,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  // On initial load, check localStorage for a user session
   useEffect(() => {
     const checkUserSession = () => {
-      setLoading(true);
       try {
         const storedUser = localStorage.getItem('viltrum_user');
         if (storedUser) {
           setUser(JSON.parse(storedUser));
-        } else {
-          setUser(null);
-          // If no user is stored and we are not on the login page, redirect.
-          if (window.location.pathname !== '/') {
-              // router.push('/');
-          }
         }
       } catch (e) {
         console.error("Failed to parse user from localStorage", e);
         localStorage.removeItem('viltrum_user');
         setUser(null);
-        // router.push('/');
       } finally {
         setLoading(false);
       }
@@ -60,6 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     const handleStorageChange = (event: StorageEvent) => {
         if (event.key === 'viltrum_user') {
+            setLoading(true);
             checkUserSession();
         }
     };
@@ -68,15 +60,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
         window.removeEventListener('storage', handleStorageChange);
     };
-  }, [router]);
+  }, []);
 
 
   const handleAuthSuccess = useCallback((userData: User) => {
-      // 1. Set user state and persist in localStorage first.
       setUser(userData);
       localStorage.setItem('viltrum_user', JSON.stringify(userData));
-      
-      // 2. Then, navigate to the dashboard.
       router.push('/dashboard'); 
   }, [router]);
 

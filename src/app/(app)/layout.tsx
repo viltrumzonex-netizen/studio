@@ -6,16 +6,23 @@ import BottomNav from '@/components/shared/bottom-nav';
 import Sidebar from '@/components/shared/sidebar';
 import Image from 'next/image';
 import { useWallet } from '@/hooks/use-wallet';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useAuth();
   const { loading: walletLoading } = useWallet();
+  const router = useRouter();
 
   const loading = authLoading || walletLoading;
 
-  // While loading, show a full-screen loader.
-  // This prevents content flashing and ensures we know the user's status before rendering.
-  if (loading) {
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/');
+    }
+  }, [authLoading, user, router]);
+
+  if (loading || !user) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
          <div className="w-full max-w-md space-y-6 flex flex-col items-center">
@@ -38,27 +45,15 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  // If loading is finished and there is a user, render the app layout.
-  if (user) {
-    return (
-      <div className="flex min-h-screen bg-background">
-          <Sidebar />
-          <div className="flex-1 flex flex-col">
-              <main className="flex-1 md:pb-0 pb-20 overflow-y-auto">
-                  {children}
-              </main>
-              <BottomNav />
-          </div>
-      </div>
-    );
-  }
-
-  // If loading is finished and there's no user, the useAuth hook should be handling
-  // the redirection to the login page. We show a "Redirecting..." message
-  // as a fallback while that happens.
   return (
-    <div className="flex h-screen items-center justify-center bg-background">
-      <p className="text-muted-foreground tracking-widest">Redirigiendo...</p>
+    <div className="flex min-h-screen bg-background">
+        <Sidebar />
+        <div className="flex-1 flex flex-col">
+            <main className="flex-1 md:pb-0 pb-20 overflow-y-auto">
+                {children}
+            </main>
+            <BottomNav />
+        </div>
     </div>
   );
 }
