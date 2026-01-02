@@ -14,6 +14,7 @@ interface WalletState {
   refreshWallet: () => void;
   setBalance: (balance: number) => void;
   setTransactions: (transactions: Transaction[]) => void;
+  setCirculatingSupply: (supply: number) => void;
   setExchangeRate: (rate: number) => void;
 }
 
@@ -26,6 +27,7 @@ const useWalletStore = create<WalletState>()((set) => ({
   refreshWallet: () => { console.log("Placeholder for refresh") },
   setBalance: (balance) => set({ balance }),
   setTransactions: (transactions) => set({ transactions }),
+  setCirculatingSupply: (supply) => set({ circulatingSupply: supply }),
   setExchangeRate: (rate) => set({ exchangeRate: rate }),
 }));
 
@@ -40,35 +42,48 @@ export const useWallet = () => {
     loading, 
     setBalance, 
     setTransactions,
+    setCirculatingSupply,
     setExchangeRate 
   } = useWalletStore();
   
   const [hydrated, setHydrated] = useState(false);
 
   const fetchWalletData = useCallback(async () => {
-    if (!user?.uid) return;
     
     useWalletStore.setState({ loading: true });
     try {
-      const walletRes = await fetch(`/api/wallet/balance?userId=${user.uid}`);
-      const walletData = await walletRes.json();
-      if (walletRes.ok) {
-        setBalance(walletData.balance);
-        setTransactions(walletData.transactions);
-      } else {
-        throw new Error(walletData.message || 'Failed to fetch wallet data');
-      }
-
-      const settingsRes = await fetch('/api/settings');
-      const settingsData = await settingsRes.json();
-      if(settingsRes.ok) {
-        const rateSetting = settingsData.find((s: any) => s.setting_key === 'exchange_rate');
-        if (rateSetting) {
-          setExchangeRate(parseFloat(rateSetting.setting_value));
+        // Fetch user-specific data only if user is logged in
+        if (user?.uid) {
+            const walletRes = await fetch(`/api/wallet/balance?userId=${user.uid}`);
+            const walletData = await walletRes.json();
+            if (walletRes.ok) {
+                setBalance(walletData.balance);
+                setTransactions(walletData.transactions);
+            } else {
+                throw new Error(walletData.message || 'Failed to fetch wallet data');
+            }
         }
-      } else {
-        throw new Error(settingsData.message || 'Failed to fetch settings');
-      }
+
+        // Fetch global data regardless of login status
+        const settingsRes = await fetch('/api/settings');
+        const settingsData = await settingsRes.json();
+        if(settingsRes.ok) {
+            const rateSetting = settingsData.find((s: any) => s.setting_key === 'exchange_rate');
+            if (rateSetting) {
+            setExchangeRate(parseFloat(rateSetting.setting_value));
+            }
+        } else {
+            throw new Error(settingsData.message || 'Failed to fetch settings');
+        }
+
+        const supplyRes = await fetch('/api/wallet/supply');
+        const supplyData = await supplyRes.json();
+        if (supplyRes.ok) {
+            setCirculatingSupply(supplyData.circulatingSupply);
+        } else {
+            throw new Error(supplyData.message || 'Failed to fetch circulating supply');
+        }
+
 
     } catch (error) {
       console.error(error);
@@ -76,13 +91,12 @@ export const useWallet = () => {
     } finally {
       useWalletStore.setState({ loading: false });
     }
-  }, [user?.uid, setBalance, setTransactions, setExchangeRate]);
+  }, [user?.uid, setBalance, setTransactions, setExchangeRate, setCirculatingSupply]);
 
   useEffect(() => {
     setHydrated(true);
-    if (user) {
-      fetchWalletData();
-    }
+    // Fetch data when component mounts, user object might not be available immediately
+    fetchWalletData();
   }, [user, fetchWalletData]);
 
   // Expose a manual refresh function
