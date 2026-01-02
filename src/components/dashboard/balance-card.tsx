@@ -8,16 +8,13 @@ import AnimatedBalance from "@/components/dashboard/animated-balance";
 import Image from "next/image";
 import { useSettings } from "@/hooks/use-settings";
 import { useWallet } from "@/hooks/use-wallet";
+import { VTC_ICON_URL } from '@/lib/constants';
 
 export default function BalanceCard() {
     const { exchangeRate } = useSettings();
-    const { getVtcBalance, walletCoins } = useWallet();
+    const { balance, refreshWallet } = useWallet();
     
-    // Find the Viltrum Coin from the wallet to display its balance
-    const viltrumCoin = walletCoins.find(c => c.symbol === 'VTC');
-    const vtcBalance = getVtcBalance();
-    const vtcIconUrl = viltrumCoin ? viltrumCoin.iconUrl : '';
-    const vesValue = vtcBalance * exchangeRate;
+    const vesValue = balance * exchangeRate;
 
     return (
         <Card className="glass-card rounded-xl overflow-hidden relative border-primary/20 neon-glow-primary">
@@ -39,8 +36,8 @@ export default function BalanceCard() {
                 
                 <div>
                     <div className="flex items-center gap-4">
-                        <AnimatedBalance value={vtcBalance} />
-                        {vtcIconUrl && <Image src={vtcIconUrl} alt="VTC Coin" width={56} height={56} className="-ml-2" />}
+                        <AnimatedBalance value={balance} />
+                        <Image src={VTC_ICON_URL} alt="VTC Coin" width={56} height={56} className="-ml-2" />
                     </div>
                     <div className='-mt-2 space-y-1'>
                         <p className="text-muted-foreground">{vesValue.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} VES</p>

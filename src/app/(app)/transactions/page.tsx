@@ -23,31 +23,17 @@ export default function TransactionsPage() {
                 <CardContent className="p-0">
                     <ul className="divide-y divide-white/10">
                         {transactions.map(tx => {
-                            const isSent = tx.type === 'sent';
+                            const isExpense = tx.type === 'expense';
                             const isTopUp = tx.type === 'top-up';
-                            const isStorePurchase = tx.type === 'expense';
                             
                             const icon = isTopUp 
                                 ? <PlusCircle className="w-5 h-5 text-primary"/> 
-                                : isStorePurchase
-                                ? <ShoppingBag className="w-5 h-5 text-accent"/>
-                                : (isSent ? <ArrowUpRight className="w-5 h-5 text-accent"/> : <ArrowDownLeft className="w-5 h-5 text-primary"/>);
+                                : <ShoppingBag className="w-5 h-5 text-accent"/>;
                             
-                            const iconBg = isTopUp 
-                                ? "bg-primary/20" 
-                                : (isSent || isStorePurchase ? "bg-accent/20" : "bg-primary/20");
+                            const iconBg = isTopUp ? "bg-primary/20" : "bg-accent/20";
                             
-                            let title = '';
-                            if (isTopUp) {
-                                title = `Recarga de ${tx.from}`;
-                            } else if (isSent) {
-                                title = `Enviado a ${tx.address}`;
-                            } else if (isStorePurchase) {
-                                title = `Canje: ${tx.details}`;
-                            }
-                            else {
-                                title = `Recibido de ${tx.address}`;
-                            }
+                            const title = tx.description || 'Transacción';
+                            const sign = isExpense ? '-' : '+';
 
                             return (
                                 <li key={tx.id} className="p-4 flex items-center justify-between hover:bg-white/5 transition-colors">
@@ -57,15 +43,12 @@ export default function TransactionsPage() {
                                         </div>
                                         <div>
                                             <p className="font-semibold capitalize">{title}</p>
-                                            <p className="text-sm text-muted-foreground">{format(tx.date, 'd MMM, h:mm a')}</p>
+                                            <p className="text-sm text-muted-foreground">{format(new Date(tx.createdAt), 'd MMM, h:mm a')}</p>
                                         </div>
                                     </div>
                                     <div className="text-right">
                                         <p className="font-semibold">
-                                            {isSent || isStorePurchase ? '-' : '+'} {tx.amount} {tx.coin.symbol}
-                                        </p>
-                                        <p className="text-sm text-muted-foreground">
-                                            ${tx.usdValue.toLocaleString('en-US')}
+                                            {sign} {tx.amount_vtc} VTC
                                         </p>
                                     </div>
                                 </li>

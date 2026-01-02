@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import { v4 as uuidv4 } from 'uuid';
 
 // PATCH /api/recharges/[id] - Update a recharge request status
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  const connection = await (await import('@/lib/db')).default.getConnection();
   try {
     const { id } = params;
     const { status } = await req.json();
@@ -10,27 +12,53 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (!id || !status || !['approved', 'denied'].includes(status)) {
       return NextResponse.json({ message: 'ID de solicitud y estado válido son requeridos.' }, { status: 400 });
     }
+    
+    await connection.beginTransaction();
 
-    // First, check the current status to prevent re-processing
-    const [existingRequest]: any = await query('SELECT status FROM recharge_requests WHERE id = ?', [id]);
+    const [existingRequest]: any = await connection.query('SELECT * FROM recharge_requests WHERE id = ? FOR UPDATE', [id]);
+    
     if (existingRequest.length === 0) {
+        await connection.rollback();
         return NextResponse.json({ message: 'Solicitud no encontrada.' }, { status: 404 });
     }
     if (existingRequest[0].status !== 'pending') {
+        await connection.rollback();
         return NextResponse.json({ message: 'Esta solicitud ya ha sido procesada.' }, { status: 409 });
     }
 
-
     // Update the request status
-    await query('UPDATE recharge_requests SET status = ? WHERE id = ?', [status, id]);
+    await connection.query('UPDATE recharge_requests SET status = ? WHERE id = ?', [status, id]);
     
-    // If approved, we would also update the user's balance and create a transaction.
-    // This logic can be expanded. For now, just updating the status.
+    if (status === 'approved') {
+        const request = existingRequest[0];
+        
+        // Get exchange rate (in a real app, this might come from a settings table)
+        // For now, we hardcode it, but it should be managed.
+        const VTC_EXCHANGE_RATE = 36.5; // 1 VTC = 36.5 Bs
+        const vtcAmount = parseFloat(request.amountBs) / VTC_EXCHANGE_RATE;
+
+        // Update user's balance
+        await connection.query(
+            'UPDATE users SET vtc_balance = vtc_balance + ? WHERE id = ?',
+            [vtcAmount, request.userId]
+        );
+
+        // Create a transaction record
+        await connection.query(
+            'INSERT INTO transactions (id, userId, type, amount_vtc, description) VALUES (?, ?, ?, ?, ?)',
+            [`TXN-${uuidv4()}`, request.userId, 'top-up', vtcAmount, `Recarga aprobada por ${request.amountBs} Bs.`]
+        );
+    }
+    
+    await connection.commit();
 
     return NextResponse.json({ message: `Solicitud ${id} ha sido actualizada a ${status}.` }, { status: 200 });
 
   } catch (error) {
+    await connection.rollback();
     console.error('[API_RECHARGE_UPDATE_ERROR]', error);
     return NextResponse.json({ message: 'Error interno del servidor.' }, { status: 500 });
+  } finally {
+      connection.release();
   }
 }

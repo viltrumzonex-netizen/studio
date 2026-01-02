@@ -1,110 +1,85 @@
 'use client';
 
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import type { Coin, Transaction, RechargeRequest } from '@/lib/types';
-import { walletCoins as initialWalletCoins, transactions as initialTransactions } from '@/lib/mock-data';
-import { useState, useEffect } from 'react';
-import { v4 as uuidv4 } from 'uuid';
+import type { Transaction } from '@/lib/types';
+import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from './use-auth';
 
 interface WalletState {
-  walletCoins: Coin[];
+  balance: number;
   transactions: Transaction[];
   circulatingSupply: number;
-  getVtcBalance: () => number;
-  purchaseItem: (amount: number) => void;
-  addTransaction: (transaction: Transaction) => void;
-  approveRecharge: (id: string, vtcAmount: number, userId: string) => void;
+  loading: boolean;
+  refreshWallet: () => void;
+  setBalance: (balance: number) => void;
+  setTransactions: (transactions: Transaction[]) => void;
 }
 
-const useWalletStore = create<WalletState>()(
-  persist(
-    (set, get) => ({
-      walletCoins: initialWalletCoins,
-      transactions: initialTransactions,
-      circulatingSupply: initialWalletCoins.reduce((acc, coin) => acc + coin.amount, 0),
-      
-      getVtcBalance: () => {
-        const vtc = get().walletCoins.find(c => c.symbol === 'VTC');
-        return vtc ? vtc.amount : 0;
-      },
+const useWalletStore = create<WalletState>()((set) => ({
+  balance: 0,
+  transactions: [],
+  circulatingSupply: 0, // This will be fetched globally
+  loading: true,
+  refreshWallet: () => { console.log("Placeholder for refresh") },
+  setBalance: (balance) => set({ balance }),
+  setTransactions: (transactions) => set({ transactions }),
+}));
 
-      purchaseItem: (amount) => set((state) => {
-        const newWalletCoins = state.walletCoins.map(coin => {
-            if (coin.symbol === 'VTC') {
-                return { ...coin, amount: coin.amount - amount };
-            }
-            return coin;
-        });
-        return { walletCoins: newWalletCoins };
-      }),
-
-      addTransaction: (transaction) => set((state) => ({
-        transactions: [transaction, ...state.transactions],
-      })),
-      
-      // Note: Recharge request management is now handled via API and database.
-      // This state hook will now only handle the *result* of an approved recharge.
-      approveRecharge: (id, vtcAmount, userId) => {
-        // This function will be called AFTER the API confirms the approval.
-        // It's responsible for updating the client-side state.
-        set(state => {
-            // In a full DB implementation, this would re-fetch the user's balance.
-            // For now, we simulate the update.
-            const newWalletCoins = state.walletCoins.map(coin => {
-                if (coin.symbol === 'VTC') {
-                    return { ...coin, amount: coin.amount + vtcAmount };
-                }
-                return coin;
-            });
-
-            const newTransaction: Transaction = {
-                id: `TXN-${uuidv4().slice(0,8)}`,
-                type: 'top-up',
-                coin: state.walletCoins.find(c => c.symbol === 'VTC')!,
-                amount: vtcAmount,
-                usdValue: vtcAmount, // Placeholder
-                date: new Date(),
-                from: 'Recarga Aprobada'
-            };
-
-            const newCirculatingSupply = state.circulatingSupply + vtcAmount;
-
-            return {
-                walletCoins: newWalletCoins,
-                transactions: [newTransaction, ...state.transactions],
-                circulatingSupply: newCirculatingSupply,
-            };
-        });
-      }
-    }),
-    {
-      name: 'viltrum-wallet-storage',
-      storage: createJSONStorage(() => localStorage),
-    }
-  )
-);
-
-// Custom hook to handle hydration issues
-const useWallet = () => {
-  const storedState = useWalletStore();
+// Custom hook to handle hydration and data fetching
+export const useWallet = () => {
+  const { user } = useAuth();
+  const { balance, transactions, circulatingSupply, loading, setBalance, setTransactions } = useWalletStore();
   const [hydrated, setHydrated] = useState(false);
+
+  const fetchWalletData = useCallback(async () => {
+    if (!user?.uid) return;
+    
+    useWalletStore.setState({ loading: true });
+    try {
+      const res = await fetch(`/api/wallet/balance?userId=${user.uid}`);
+      const data = await res.json();
+      if (res.ok) {
+        setBalance(data.balance);
+        setTransactions(data.transactions);
+      } else {
+        throw new Error(data.message || 'Failed to fetch wallet data');
+      }
+    } catch (error) {
+      console.error(error);
+      // Handle error (e.g., show toast)
+    } finally {
+      useWalletStore.setState({ loading: false });
+    }
+  }, [user?.uid, setBalance, setTransactions]);
 
   useEffect(() => {
     setHydrated(true);
-  }, []);
+    if (user) {
+      fetchWalletData();
+    }
+  }, [user, fetchWalletData]);
 
-  const initialState: WalletState = {
-      walletCoins: initialWalletCoins,
-      transactions: initialTransactions,
-      circulatingSupply: initialWalletCoins.reduce((acc, coin) => acc + coin.amount, 0),
-      getVtcBalance: () => initialWalletCoins.find(c => c.symbol === 'VTC')?.amount || 0,
-      purchaseItem: () => {},
-      addTransaction: () => {},
-      approveRecharge: () => {},
+  // Expose a manual refresh function
+  const refreshWallet = useCallback(() => {
+    fetchWalletData();
+  }, [fetchWalletData]);
+
+  const initialState = {
+      balance: 0,
+      transactions: [],
+      circulatingSupply: 0,
+      loading: true,
+      refreshWallet: () => {},
+      setBalance: () => {},
+      setTransactions: () => {},
   };
 
-  return hydrated ? storedState : initialState;
-};
+  if (!hydrated) {
+    return initialState;
+  }
+  
+  // Attach the real refresh function to the store instance
+  useWalletStore.setState({ refreshWallet });
 
-export { useWallet };
+  return { balance, transactions, circulatingSupply, loading, refreshWallet };
+};

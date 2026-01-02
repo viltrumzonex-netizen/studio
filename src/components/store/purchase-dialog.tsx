@@ -15,27 +15,20 @@ import { Button } from "@/components/ui/button";
 import { ShoppingBag } from "lucide-react";
 import { useWallet } from "@/hooks/use-wallet";
 import { useToast } from "@/hooks/use-toast";
-import { v4 as uuidv4 } from 'uuid';
-import { walletCoins } from "@/lib/mock-data";
-
+import type { StoreItem } from "@/lib/types";
 
 interface PurchaseDialogProps {
-    item: {
-        id: string;
-        name: string;
-        price: number;
-        description: string;
-    };
+    item: StoreItem;
     userBalance: number;
 }
 
 
 export default function PurchaseDialog({ item, userBalance }: PurchaseDialogProps) {
-    const { purchaseItem, addTransaction } = useWallet();
+    const { refreshWallet } = useWallet();
     const { toast } = useToast();
     const canAfford = userBalance >= item.price;
     
-    const handlePurchase = () => {
+    const handlePurchase = async () => {
         if (!canAfford) {
             toast({
                 variant: "destructive",
@@ -45,22 +38,30 @@ export default function PurchaseDialog({ item, userBalance }: PurchaseDialogProp
             return;
         }
 
-        purchaseItem(item.price);
-        const transactionId = `TXN-${uuidv4().slice(0, 8)}`;
-        addTransaction({
-            id: transactionId,
-            type: 'expense',
-            coin: walletCoins[0], // VTC
-            amount: item.price,
-            usdValue: item.price, // Assuming 1 VTC = 1 USD for this mock
-            date: new Date(),
-            details: item.name,
-        });
+        try {
+            const response = await fetch('/api/store/purchase', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ itemId: item.id })
+            });
 
-        toast({
-            title: "¡Canje Exitoso!",
-            description: `Has canjeado ${item.name} por ${item.price} VTC. ID de canje: ${transactionId}`,
-        });
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Error al procesar la compra.');
+            }
+
+            toast({
+                title: "¡Canje Exitoso!",
+                description: `Has canjeado ${item.name} por ${item.price} VTC.`,
+            });
+            
+            // Refresh wallet to show new balance and transaction
+            refreshWallet();
+
+        } catch(error: any) {
+            toast({ variant: 'destructive', title: 'Error en el Canje', description: error.message });
+        }
     };
 
     return (

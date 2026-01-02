@@ -1,22 +1,36 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ShoppingBag } from "lucide-react";
 import { useWallet } from "@/hooks/use-wallet";
 import PurchaseDialog from "@/components/store/purchase-dialog";
+import type { StoreItem } from '@/lib/types';
+import { useToast } from '@/hooks/use-toast';
 
-const storeItems = [
-    { id: 'item-1', name: "1 Hora Extra", price: 10, description: "Una hora adicional de juego en cualquier PC." },
-    { id: 'item-2', name: "Boleto de Torneo", price: 50, description: "Entrada para el próximo torneo semanal." },
-    { id: 'item-3', name: "Mousepad Gamer", price: 150, description: "Un mousepad de alta calidad para mejorar tu precisión." },
-    { id: 'item-4', name: "Bebida Energética", price: 15, description: "Una lata de tu bebida energética favorita." },
-    { id: 'item-5', name: "Combo Snack", price: 25, description: "Papas fritas y una bebida." },
-];
 
 export default function StorePage() {
-    const { getVtcBalance } = useWallet();
-    const userBalance = getVtcBalance();
+    const { balance } = useWallet();
+    const [storeItems, setStoreItems] = useState<StoreItem[]>([]);
+    const { toast } = useToast();
+
+    useEffect(() => {
+        const fetchItems = async () => {
+            try {
+                const response = await fetch('/api/store/items');
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.message || 'Error al cargar los productos de la tienda');
+                }
+                setStoreItems(data);
+            } catch (error: any) {
+                toast({ variant: 'destructive', title: 'Error', description: error.message });
+            }
+        };
+        fetchItems();
+    }, [toast]);
+
 
     return (
         <div className="container mx-auto p-4 md:p-8 space-y-8">
@@ -35,7 +49,7 @@ export default function StorePage() {
                         <CardContent className="flex-grow flex flex-col justify-end">
                             <div className="flex justify-between items-center mt-4">
                                 <p className="text-2xl font-bold font-headline text-primary">{item.price} <span className="text-lg">VTC</span></p>
-                                <PurchaseDialog item={item} userBalance={userBalance} />
+                                <PurchaseDialog item={item} userBalance={balance} />
                             </div>
                         </CardContent>
                     </Card>

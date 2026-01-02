@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -20,9 +21,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/hooks/use-auth";
-import { walletCoins } from "@/lib/mock-data";
 import { Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { VTC_SYMBOL } from "@/lib/constants";
 
 export default function SendReceiveDialog() {
   const { user } = useAuth();
@@ -60,16 +61,14 @@ export default function SendReceiveDialog() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="asset">Activo</Label>
-                <Select>
+                <Select defaultValue={VTC_SYMBOL}>
                   <SelectTrigger id="asset">
                     <SelectValue placeholder="Selecciona una moneda" />
                   </SelectTrigger>
                   <SelectContent>
-                    {walletCoins.map((coin) => (
-                      <SelectItem key={coin.id} value={coin.id}>
-                        {coin.name} ({coin.symbol})
-                      </SelectItem>
-                    ))}
+                    <SelectItem value={VTC_SYMBOL}>
+                        Viltrum Coin (VTC)
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -78,8 +77,8 @@ export default function SendReceiveDialog() {
                 <Input id="amount" type="number" placeholder="0.0" />
               </div>
             </div>
-            <Button type="submit" className="w-full bg-primary hover:bg-primary/90">
-              Enviar
+            <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled>
+              Enviar (Próximamente)
             </Button>
           </TabsContent>
           <TabsContent value="receive" className="mt-4">

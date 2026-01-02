@@ -9,7 +9,7 @@ import Image from "next/image";
 import { useSettings } from "@/hooks/use-settings";
 import BalanceCard from "@/components/dashboard/balance-card";
 import { Progress } from "@/components/ui/progress";
-import { TOTAL_SUPPLY } from "@/lib/mock-data";
+import { TOTAL_SUPPLY } from "@/lib/constants";
 import { useWallet } from "@/hooks/use-wallet";
 
 export default function DashboardPage() {
@@ -38,7 +38,7 @@ export default function DashboardPage() {
                     <div className="space-y-2">
                         <div className="flex justify-between items-baseline">
                             <p className="text-muted-foreground">VTC en Circulación</p>
-                            <p className="font-bold font-headline text-lg">{circulatingSupply} <span className="text-sm text-muted-foreground">/ {TOTAL_SUPPLY} VTC</span></p>
+                            <p className="font-bold font-headline text-lg">{circulatingSupply.toLocaleString('de-DE')} <span className="text-sm text-muted-foreground">/ {TOTAL_SUPPLY.toLocaleString('de-DE')} VTC</span></p>
                         </div>
                         <Progress value={circulationPercentage} className="h-2" />
                     </div>
@@ -48,21 +48,21 @@ export default function DashboardPage() {
                                 <Package className="h-5 w-5 text-muted-foreground"/>
                                 <h3 className="text-md font-semibold">Suministro Total</h3>
                             </div>
-                            <p className="text-2xl font-bold font-headline text-glow">{TOTAL_SUPPLY}</p>
+                            <p className="text-2xl font-bold font-headline text-glow">{TOTAL_SUPPLY.toLocaleString('de-DE')}</p>
                         </div>
                         <div>
                            <div className="flex items-center justify-center gap-2">
                                 <PackageCheck className="h-5 w-5 text-muted-foreground"/>
                                 <h3 className="text-md font-semibold">En Circulación</h3>
                             </div>
-                            <p className="text-2xl font-bold font-headline text-primary">{circulatingSupply}</p>
+                            <p className="text-2xl font-bold font-headline text-primary">{circulatingSupply.toLocaleString('de-DE')}</p>
                         </div>
                         <div>
                            <div className="flex items-center justify-center gap-2">
                                 <PackageX className="h-5 w-5 text-muted-foreground"/>
                                 <h3 className="text-md font-semibold">Restantes</h3>
                             </div>
-                            <p className="text-2xl font-bold font-headline text-accent">{TOTAL_SUPPLY - circulatingSupply}</p>
+                            <p className="text-2xl font-bold font-headline text-accent">{(TOTAL_SUPPLY - circulatingSupply).toLocaleString('de-DE')}</p>
                         </div>
                     </div>
                 </CardContent>
@@ -76,42 +76,32 @@ export default function DashboardPage() {
                     <CardContent>
                         <ul className="space-y-4">
                             {transactions.slice(0, 3).map(tx => {
-                                const isSent = tx.type === 'sent';
+                                const isSent = tx.type === 'expense'; // Only expense is negative for now
                                 const isTopUp = tx.type === 'top-up';
-                                const isStorePurchase = tx.type === 'expense';
-                                const iconColor = isSent || isStorePurchase ? "text-accent" : "text-primary";
-                                const sign = isSent || isStorePurchase ? '-' : '+';
+                                const iconColor = isSent ? "text-accent" : "text-primary";
+                                const sign = isSent ? '-' : '+';
                                 
-                                let title = '';
-                                if (isTopUp) {
-                                    title = `Recarga de ${tx.from}`;
-                                } else if (isSent) {
-                                    title = `Enviado ${tx.coin.symbol}`;
-                                } else if(isStorePurchase) {
-                                    title = `Canje: ${tx.details}`;
-                                } else {
-                                    title = `Recibido ${tx.coin.symbol}`;
-                                }
-
+                                let title = tx.description || 'Transacción';
+                               
                                 return (
                                     <li key={tx.id} className="flex items-center justify-between">
                                         <div className="flex items-center gap-4">
                                             <div className={"flex items-center justify-center w-12 h-12"}>
                                                 {isTopUp && <PlusCircle className={cn("w-8 h-8", iconColor)} />}
-                                                {(isSent || isStorePurchase) && <ShoppingBag className={cn("w-8 h-8", iconColor)} />}
-                                                {tx.type === 'received' && <Image src={tx.coin.iconUrl} alt={tx.coin.name} width={40} height={40} /> }
+                                                {isSent && <ShoppingBag className={cn("w-8 h-8", iconColor)} />}
+                                                
                                             </div>
                                             <div>
                                                 <p className="font-semibold capitalize">{title}</p>
-                                                <p className="text-sm text-muted-foreground">{format(tx.date, 'd MMM, yyyy')}</p>
+                                                <p className="text-sm text-muted-foreground">{format(new Date(tx.createdAt), 'd MMM, yyyy')}</p>
                                             </div>
                                         </div>
                                         <div className="text-right">
                                             <p className={cn("font-semibold", iconColor)}>
-                                                {sign} {tx.amount} {tx.coin.symbol}
+                                                {sign} {tx.amount_vtc} VTC
                                             </p>
                                             <p className="text-sm text-muted-foreground">
-                                                ~{(tx.amount * useSettings().exchangeRate).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} VES
+                                                ~{(tx.amount_vtc * useSettings().exchangeRate).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} VES
                                             </p>
                                         </div>
                                     </li>

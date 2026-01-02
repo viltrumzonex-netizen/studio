@@ -9,14 +9,11 @@ export type Coin = {
 
 export type Transaction = {
     id: string;
-    type: 'sent' | 'received' | 'top-up' | 'expense';
-    coin: Coin;
-    amount: number;
-    usdValue: number;
-    date: Date;
-    address?: string;
-    from?: string;
-    details?: string; // For store purchases, etc.
+    userId: number;
+    type: 'top-up' | 'expense';
+    amount_vtc: number;
+    description: string | null;
+    createdAt: string; // Comes as string from DB
 }
 
 export type RechargeRequest = {
@@ -28,4 +25,12 @@ export type RechargeRequest = {
     reference: string;
     date: Date; // createdAt from DB
     status: 'pending' | 'approved' | 'denied';
+}
+
+export type StoreItem = {
+    id: number;
+    name: string;
+    description: string;
+    price: number;
+    stock: number;
 }

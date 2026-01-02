@@ -1,4 +1,4 @@
-import type { Coin } from "@/lib/mock-data";
+import type { Coin } from "@/lib/types";
 import Image from 'next/image';
 import { cn } from "@/lib/utils";
 import { useSettings } from "@/hooks/use-settings";
@@ -35,7 +35,7 @@ export default function CoinCard({ coin }: CoinCardProps) {
             <div className="relative z-10 text-right">
                 <p className="text-sm text-primary-foreground/70">Balance</p>
                 <p className="text-3xl font-bold font-headline text-white">
-                    {coin.amount.toLocaleString('es-VE')}
+                    {coin.amount.toLocaleString('de-DE')}
                 </p>
                 <p className="text-sm text-primary-foreground/70">
                     ~{vesValue.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} VES

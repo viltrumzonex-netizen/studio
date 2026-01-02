@@ -23,7 +23,6 @@ export default function AdminPage() {
             const response = await fetch('/api/recharges');
             const data = await response.json();
             if (response.ok) {
-                // Procesar las fechas
                 const requests = data.map((req: any) => ({
                     ...req,
                     date: new Date(req.createdAt),
@@ -51,11 +50,6 @@ export default function AdminPage() {
     };
 
     const handleStatusChange = async (id: string, newStatus: 'approved' | 'denied') => {
-        const originalRequests = [...rechargeRequests];
-        
-        // Optimistic UI update
-        setRechargeRequests(prev => prev.map(req => req.id === id ? {...req, status: newStatus} : req));
-
         try {
             const response = await fetch(`/api/recharges/${id}`, {
                 method: 'PATCH',
@@ -79,8 +73,6 @@ export default function AdminPage() {
             fetchRechargeRequests();
 
         } catch (error: any) {
-            // Revert UI on error
-            setRechargeRequests(originalRequests);
             toast({ variant: 'destructive', title: 'Error', description: error.message });
         }
     };
@@ -139,7 +131,7 @@ export default function AdminPage() {
                                     <TableCell>{Number(req.amountBs).toLocaleString('es-VE', { minimumFractionDigits: 2 })}</TableCell>
                                     <TableCell>{req.method}</TableCell>
                                     <TableCell>{req.reference}</TableCell>
-                                    <TableCell>{req.date.toLocaleDateString()}</TableCell>
+                                    <TableCell>{new Date(req.date).toLocaleDateString()}</TableCell>
                                     <TableCell>
                                         <Badge variant={req.status === 'pending' ? 'secondary' : 'default'} className={cn(
                                             {
