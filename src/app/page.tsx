@@ -12,17 +12,15 @@ export default function LoginPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // If auth is no longer loading and we have a user, redirect to the dashboard.
     if (!loading && user) {
       router.push('/dashboard');
     }
   }, [user, loading, router]);
 
 
-  // While auth is loading, or if we have a user and are about to redirect, show a loader.
   if (loading || user) {
     return (
-        <div className="flex min-h-screen flex-col items-center justify-center p-4 bg-background">
+        <div className="flex min-h-screen flex-col items-center justify-center p-4 bg-background animate-fade-in">
             <div className="w-full max-w-md space-y-6 flex flex-col items-center">
                  <div className="relative flex items-center justify-center h-48 w-48">
                     <div className="absolute inset-0 bg-primary/20 rounded-full blur-3xl animate-pulse"></div>
@@ -43,7 +41,6 @@ export default function LoginPage() {
     );
   }
   
-  // If not loading and no user, show the login form.
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-background overflow-hidden">
         <div className="absolute inset-0 z-0 opacity-20">

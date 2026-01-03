@@ -6,10 +6,10 @@ export async function GET(req: NextRequest) {
     const user = await getServerSession(req);
 
     if (!user) {
-      return NextResponse.json({ message: 'No autenticado.' }, { status: 401 });
+      return NextResponse.json({ user: null });
     }
 
-    return NextResponse.json({ user }, { status: 200 });
+    return NextResponse.json({ user });
 
   } catch (error) {
     console.error('[API_SESSION_ERROR]', error);

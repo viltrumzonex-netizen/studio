@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, type ReactNode, useEffect, useCallback } from 'react';
+import { createContext, useContext, type ReactNode, useEffect } from 'react';
 import { create } from 'zustand';
 import { useWalletStore } from '@/hooks/use-wallet';
 
@@ -87,14 +87,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const store = useAuthStore();
     const { user, loading } = store;
     
-    const fetchSession = useCallback(() => {
-        store.fetchSession();
-    }, [store]);
-
     // Initial fetch of session
     useEffect(() => {
-        fetchSession();
-    }, [fetchSession]);
+        useAuthStore.getState().fetchSession();
+    }, []);
 
     // Effect to fetch wallet data when user logs in
     useEffect(() => {

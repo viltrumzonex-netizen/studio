@@ -14,6 +14,16 @@ import { TOTAL_SUPPLY } from "@/lib/constants";
 import type { Transaction } from "@/lib/types";
 import { transactionTypeConfig } from "@/lib/types";
 
+const Icon = ({ type, className }: { type: 'package' | 'package-check' | 'package-x', className?: string }) => {
+    const icons = {
+        'package': Package,
+        'package-check': PackageCheck,
+        'package-x': PackageX,
+    };
+    const IconComponent = icons[type];
+    return <IconComponent className={className} />;
+}
+
 export default function DashboardPage() {
     const { user } = useAuth();
     const { transactions, circulatingSupply, exchangeRate } = useWallet();
@@ -47,21 +57,21 @@ export default function DashboardPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
                         <div>
                             <div className="flex items-center justify-center gap-2">
-                                <Package className="h-5 w-5 text-muted-foreground"/>
+                                <Icon type="package" className="h-5 w-5 text-muted-foreground"/>
                                 <h3 className="text-md font-semibold">Suministro Total</h3>
                             </div>
                             <p className="text-2xl font-bold font-headline text-glow">{TOTAL_SUPPLY.toLocaleString('es-VE')}</p>
                         </div>
                         <div>
                            <div className="flex items-center justify-center gap-2">
-                                <PackageCheck className="h-5 w-5 text-muted-foreground"/>
+                                <Icon type="package-check" className="h-5 w-5 text-muted-foreground"/>
                                 <h3 className="text-md font-semibold">En Circulación</h3>
                             </div>
                             <p className="text-2xl font-bold font-headline text-primary">{Number(circulatingSupply).toLocaleString('es-VE')}</p>
                         </div>
                         <div>
                            <div className="flex items-center justify-center gap-2">
-                                <PackageX className="h-5 w-5 text-muted-foreground"/>
+                                <Icon type="package-x" className="h-5 w-5 text-muted-foreground"/>
                                 <h3 className="text-md font-semibold">Restantes</h3>
                             </div>
                             <p className="text-2xl font-bold font-headline text-accent">{(TOTAL_SUPPLY - Number(circulatingSupply)).toLocaleString('es-VE')}</p>
