@@ -1,3 +1,4 @@
+
 'use client';
 
 import { create } from 'zustand';
@@ -61,29 +62,36 @@ const useWalletStore = create<WalletState>((set, get) => ({
 }));
 
 
+// This is the main hook that components will use.
 export const useWallet = () => {
-  const { user, loading: authLoading } = useAuth();
-  const { fetchWalletData, reset, ...walletState } = useWalletStore();
+    const { user, loading: authLoading } = useAuth();
+    const { fetchWalletData, reset, ...walletState } = useWalletStore();
 
-  useEffect(() => {
-    if (user?.uid) {
-      fetchWalletData(user.uid);
-    } else if (!authLoading) {
-      // If auth is done and there's no user, reset the wallet.
-      reset();
-    }
-  }, [user, authLoading, fetchWalletData, reset]);
+    // This effect synchronizes the wallet state with the authentication state.
+    useEffect(() => {
+        // If we have a user, fetch their data.
+        if (user?.uid) {
+            fetchWalletData(user.uid);
+        } 
+        // If authentication is finished and there's definitely no user, reset the wallet state.
+        else if (!authLoading) {
+            reset();
+        }
+    }, [user, authLoading, fetchWalletData, reset]);
 
-  const refreshWallet = useCallback(() => {
-    if (user?.uid) {
-      fetchWalletData(user.uid);
-    }
-  }, [user?.uid, fetchWalletData]);
 
-  // The wallet is loading if either the auth check is running OR the wallet data fetch is running.
-  return {
-    ...walletState,
-    loading: authLoading || walletState.loading,
-    refreshWallet,
-  };
+    // Create a memoized refresh function.
+    const refreshWallet = useCallback(() => {
+        if (user?.uid) {
+            fetchWalletData(user.uid);
+        }
+    }, [user?.uid, fetchWalletData]);
+
+
+    // The wallet is loading if either the auth check is running OR the wallet data fetch is running.
+    return {
+        ...walletState,
+        loading: authLoading || walletState.loading,
+        refreshWallet,
+    };
 };

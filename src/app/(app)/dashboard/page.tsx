@@ -1,7 +1,8 @@
+
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, Package, PackageCheck, PackageX, ShoppingBag, ArrowUpRight, ArrowDownLeft } from "lucide-react";
+import { Package, PackageCheck, PackageX } from "lucide-react";
 import { format } from 'date-fns';
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
@@ -11,31 +12,7 @@ import BalanceCard from "@/components/dashboard/balance-card";
 import { Progress } from "@/components/ui/progress";
 import { TOTAL_SUPPLY } from "@/lib/constants";
 import type { Transaction } from "@/lib/types";
-
-
-const typeConfig: { [key in Transaction['type']]: { icon: React.ElementType, color: string, sign: string } } = {
-    'top-up': {
-        icon: PlusCircle,
-        color: 'text-primary',
-        sign: '+'
-    },
-    'expense': {
-        icon: ShoppingBag,
-        color: 'text-accent',
-        sign: '-'
-    },
-    'transfer-out': {
-        icon: ArrowUpRight,
-        color: 'text-accent',
-        sign: '-'
-    },
-    'transfer-in': {
-        icon: ArrowDownLeft,
-        color: 'text-primary',
-        sign: '+'
-    }
-}
-
+import { transactionTypeConfig } from "@/lib/types";
 
 export default function DashboardPage() {
     const { user } = useAuth();
@@ -101,7 +78,7 @@ export default function DashboardPage() {
                     <CardContent>
                         <ul className="space-y-4">
                             {(transactions || []).slice(0, 3).map(tx => {
-                                const config = typeConfig[tx.type] || typeConfig['expense'];
+                                const config = transactionTypeConfig[tx.type] || transactionTypeConfig['expense'];
                                 const Icon = config.icon;
                                 
                                 let title = tx.description || 'Transacción';

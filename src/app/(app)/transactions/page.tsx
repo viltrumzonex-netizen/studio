@@ -1,34 +1,13 @@
+
 'use client';
 
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowDownLeft, ArrowUpRight, PlusCircle, ShoppingBag } from "lucide-react";
 import { format } from 'date-fns';
 import { cn } from "@/lib/utils";
 import SendReceiveDialog from "@/components/transactions/send-receive-dialog";
 import { useWallet } from "@/hooks/use-wallet";
+import { transactionTypeConfig } from "@/lib/types";
 
-const typeConfig = {
-    'top-up': {
-        icon: PlusCircle,
-        color: 'text-primary',
-        sign: '+'
-    },
-    'expense': {
-        icon: ShoppingBag,
-        color: 'text-accent',
-        sign: '-'
-    },
-    'transfer-out': {
-        icon: ArrowUpRight,
-        color: 'text-accent',
-        sign: '-'
-    },
-    'transfer-in': {
-        icon: ArrowDownLeft,
-        color: 'text-primary',
-        sign: '+'
-    }
-}
 
 export default function TransactionsPage() {
     const { transactions } = useWallet();
@@ -46,7 +25,7 @@ export default function TransactionsPage() {
                 <CardContent className="p-0">
                     <ul className="divide-y divide-white/10">
                         {(transactions || []).map(tx => {
-                            const config = typeConfig[tx.type] || typeConfig['expense'];
+                            const config = transactionTypeConfig[tx.type] || transactionTypeConfig['expense'];
                             const Icon = config.icon;
                             
                             const iconBg = tx.type === 'top-up' || tx.type === 'transfer-in'
