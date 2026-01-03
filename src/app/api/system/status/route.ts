@@ -1,7 +1,10 @@
+'use client';
+
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { getServerSession } from '@/lib/session';
 import { VTC_SYMBOL } from '@/lib/constants';
+import type { PoolConnection } from 'mysql2/promise';
 
 type SystemStatus = {
     dbConnected: { status: boolean, message: string };
@@ -23,9 +26,10 @@ export async function GET(req: NextRequest) {
         adminExists: { status: false, message: 'No existen usuarios administradores.' },
     };
 
-    let connection;
+    let connection: PoolConnection | null = null;
     try {
         connection = await pool.getConnection();
+        await connection.ping(); // Verify connection is active
         status.dbConnected = { status: true, message: 'Conexión a la base de datos exitosa.' };
         
         // Check exchange rate
@@ -46,15 +50,15 @@ export async function GET(req: NextRequest) {
             status.adminExists = { status: true, message: `${admins[0].adminCount} administrador(es) encontrado(s).` };
         }
 
-        return NextResponse.json(status, { status: 200 });
-
     } catch (error: any) {
-        status.dbConnected = { status: false, message: error.message };
-        // Return the partial status even if DB connection fails after initial success
-        return NextResponse.json(status, { status: 500 });
+        status.dbConnected = { status: false, message: `Fallo en la conexión: ${error.message}` };
+        // Return the partial status even if DB connection fails
+        return NextResponse.json(status, { status: 200 }); // Return 200 so frontend can display the partial status
     } finally {
         if (connection) {
             connection.release();
         }
     }
+    
+    return NextResponse.json(status, { status: 200 });
 }
