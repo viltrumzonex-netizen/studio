@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, type ReactNode, useEffect } from 'react';
+import { createContext, useContext, type ReactNode, useEffect, useCallback } from 'react';
 import { create } from 'zustand';
 
 export type User = {
@@ -21,7 +21,7 @@ interface AuthState {
 
 const useAuthStore = create<AuthState>((set) => ({
     user: null,
-    loading: true,
+    loading: true, // Start with loading true
     fetchSession: async () => {
         set({ loading: true });
         try {
@@ -78,18 +78,20 @@ const useAuthStore = create<AuthState>((set) => ({
     },
 }));
 
-
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const store = useAuthStore();
+    const { fetchSession, ...store } = useAuthStore();
     
+    // fetchSession is now stable thanks to useCallback in the hook below,
+    // but we can also just call it once on mount.
     useEffect(() => {
-        store.fetchSession();
-    }, [store.fetchSession]);
+        fetchSession();
+    }, [fetchSession]);
 
+    // Pass the whole store state to the context provider
     return (
-        <AuthContext.Provider value={store}>
+        <AuthContext.Provider value={{ fetchSession, ...store }}>
             {children}
         </AuthContext.Provider>
     );
