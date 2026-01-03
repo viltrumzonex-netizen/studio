@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, Package, PackageCheck, PackageX, ShoppingBag } from "lucide-react";
+import { PlusCircle, Package, PackageCheck, PackageX, ShoppingBag, ArrowUpRight, ArrowDownLeft } from "lucide-react";
 import { format } from 'date-fns';
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
@@ -10,6 +10,31 @@ import { useWallet } from "@/hooks/use-wallet";
 import BalanceCard from "@/components/dashboard/balance-card";
 import { Progress } from "@/components/ui/progress";
 import { TOTAL_SUPPLY } from "@/lib/constants";
+import type { Transaction } from "@/lib/types";
+
+
+const typeConfig: { [key in Transaction['type']]: { icon: React.ElementType, color: string, sign: string } } = {
+    'top-up': {
+        icon: PlusCircle,
+        color: 'text-primary',
+        sign: '+'
+    },
+    'expense': {
+        icon: ShoppingBag,
+        color: 'text-accent',
+        sign: '-'
+    },
+    'transfer-out': {
+        icon: ArrowUpRight,
+        color: 'text-accent',
+        sign: '-'
+    },
+    'transfer-in': {
+        icon: ArrowDownLeft,
+        color: 'text-primary',
+        sign: '+'
+    }
+}
 
 
 export default function DashboardPage() {
@@ -76,10 +101,8 @@ export default function DashboardPage() {
                     <CardContent>
                         <ul className="space-y-4">
                             {(transactions || []).slice(0, 3).map(tx => {
-                                const isSent = tx.type === 'expense'; // Only expense is negative for now
-                                const isTopUp = tx.type === 'top-up';
-                                const iconColor = isSent ? "text-accent" : "text-primary";
-                                const sign = isSent ? '-' : '+';
+                                const config = typeConfig[tx.type] || typeConfig['expense'];
+                                const Icon = config.icon;
                                 
                                 let title = tx.description || 'Transacción';
                                
@@ -87,9 +110,7 @@ export default function DashboardPage() {
                                     <li key={tx.id} className="flex items-center justify-between">
                                         <div className="flex items-center gap-4">
                                             <div className={"flex items-center justify-center w-12 h-12"}>
-                                                {isTopUp && <PlusCircle className={cn("w-8 h-8", iconColor)} />}
-                                                {isSent && <ShoppingBag className={cn("w-8 h-8", iconColor)} />}
-                                                
+                                                <Icon className={cn("w-8 h-8", config.color)} />
                                             </div>
                                             <div>
                                                 <p className="font-semibold capitalize">{title}</p>
@@ -97,8 +118,8 @@ export default function DashboardPage() {
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <p className={cn("font-semibold", iconColor)}>
-                                                {sign} {tx.amount_vtc} VTC
+                                            <p className={cn("font-semibold", config.color)}>
+                                                {config.sign} {tx.amount_vtc.toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2})} VTC
                                             </p>
                                             <p className="text-sm text-muted-foreground">
                                                 ~{(tx.amount_vtc * exchangeRate).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} VES

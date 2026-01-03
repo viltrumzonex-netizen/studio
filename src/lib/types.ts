@@ -10,7 +10,7 @@ export type Coin = {
 export type Transaction = {
     id: string;
     userId: number;
-    type: 'top-up' | 'expense';
+    type: 'top-up' | 'expense' | 'transfer-in' | 'transfer-out';
     amount_vtc: number;
     description: string | null;
     createdAt: string; // Comes as string from DB
