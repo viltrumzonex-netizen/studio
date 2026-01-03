@@ -29,7 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchSession = useCallback(async () => {
     setLoading(true);
     try {
-        const response = await fetch('/api/auth/session', { credentials: 'include' });
+        const response = await fetch('/api/auth/session');
         if (response.ok) {
             const data = await response.json();
             setUser(data.user);
@@ -60,8 +60,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error(data.message || 'Error al iniciar sesión.');
     }
     
-    // After login, fetch the session from the server to get the source of truth
-    await fetchSession();
+    // The API now returns the user object on success.
+    // Set the user directly to avoid race conditions with cookies.
+    setUser(data.user);
   };
   
   const register = async (email: string, password: string, displayName: string) => {
@@ -75,9 +76,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!response.ok) {
           throw new Error(data.message || 'Error al registrar el usuario.');
       }
-
-      // After register, fetch the session from the server
-      await fetchSession();
+      
+      // The API now returns the user object on success.
+      // Set the user directly.
+      setUser(data.user);
   };
 
   const logout = async () => {
@@ -87,7 +89,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error("Failed to call logout API", error);
     } finally {
         setUser(null);
-        router.push('/');
+        // Force reload to clear all state and ensure clean redirect.
+        window.location.href = '/';
     }
   };
 
