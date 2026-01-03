@@ -41,9 +41,8 @@ export default function PurchaseDialog({ item, userBalance }: PurchaseDialogProp
             const response = await fetch('/api/store/purchase', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                // The user ID is no longer sent from the client.
-                // The backend gets it securely from the session cookie.
-                body: JSON.stringify({ itemId: item.id })
+                body: JSON.stringify({ itemId: item.id }),
+                credentials: 'include'
             });
 
             const data = await response.json();
@@ -57,7 +56,6 @@ export default function PurchaseDialog({ item, userBalance }: PurchaseDialogProp
                 description: `Has canjeado ${item.name} por ${item.price} VTC.`,
             });
             
-            // Refresh wallet to show new balance and transaction
             refreshWallet();
 
         } catch(error: any) {

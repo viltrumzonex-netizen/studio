@@ -15,7 +15,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'La contraseña debe tener al menos 6 caracteres.' }, { status: 400 });
     }
 
-    // Check if user already exists
     const existingUsers: any = await query('SELECT id FROM users WHERE email = ?', [email]);
     
     if (existingUsers && existingUsers.length > 0) {
@@ -24,7 +23,6 @@ export async function POST(req: NextRequest) {
     
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Explicitly set the role to 'user' on creation
     const result: any = await query(
       "INSERT INTO users (email, password, displayName, role) VALUES (?, ?, ?, 'user')",
       [email, hashedPassword, displayName]
@@ -43,7 +41,6 @@ export async function POST(req: NextRequest) {
         role: 'user', 
     };
 
-    // Serialize the user data and set it in an httpOnly cookie
     const sessionCookie = serialize('viltrum_session', JSON.stringify(user), {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',

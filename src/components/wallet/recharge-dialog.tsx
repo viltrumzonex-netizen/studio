@@ -98,7 +98,7 @@ export default function RechargeDialog() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(values),
-            credentials: 'include', // Include cookies in the request
+            credentials: 'include',
         });
 
         const data = await response.json();

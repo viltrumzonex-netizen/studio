@@ -2,11 +2,10 @@ import { NextResponse } from 'next/server';
 import { serialize } from 'cookie';
 
 export async function POST() {
-  // Expire the cookie to log the user out
   const sessionCookie = serialize('viltrum_session', '', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    expires: new Date(0), // Set expiration to the past
+    expires: new Date(0),
     path: '/',
   });
 

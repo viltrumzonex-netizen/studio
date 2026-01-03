@@ -37,7 +37,6 @@ export async function POST(req: NextRequest) {
       role: dbUser.role || 'user',
     };
     
-    // Serialize the user data and set it in an httpOnly cookie
     const sessionCookie = serialize('viltrum_session', JSON.stringify(user), {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',

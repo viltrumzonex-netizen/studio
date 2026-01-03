@@ -11,67 +11,69 @@ import { cn } from "@/lib/utils";
 import type { RechargeRequest } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Users } from 'lucide-react';
+import { useWallet } from '@/hooks/use-wallet';
+import { useAuth } from '@/hooks/use-auth';
+import { useRouter } from 'next/navigation';
 
 export default function AdminPage() {
     const { toast } = useToast();
+    const { user, loading: authLoading } = useAuth();
+    const router = useRouter();
+    const { exchangeRate: initialExchangeRate } = useWallet();
     const [exchangeRate, setExchangeRate] = useState(0);
     const [rechargeRequests, setRechargeRequests] = useState<RechargeRequest[]>([]);
     const [userCount, setUserCount] = useState<number>(0);
 
-    const fetchSettings = async () => {
-        try {
-            const response = await fetch('/api/settings');
-            const data = await response.json();
-            if (response.ok) {
-                const rateSetting = data.find((s: any) => s.setting_key === 'exchange_rate');
-                if (rateSetting) {
-                    setExchangeRate(parseFloat(rateSetting.setting_value));
-                }
-            } else {
-                throw new Error(data.message || 'Error al obtener la configuración');
-            }
-        } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Error', description: error.message });
+    // Set initial exchange rate from the wallet hook once available
+    useEffect(() => {
+        if(initialExchangeRate) {
+            setExchangeRate(initialExchangeRate);
         }
-    };
+    }, [initialExchangeRate]);
 
-    const fetchRechargeRequests = async () => {
+    const fetchAdminData = useCallback(async () => {
         try {
-            const response = await fetch('/api/recharges');
-            const data = await response.json();
-            if (response.ok) {
-                const requests = data.map((req: any) => ({
+            const [rechargeResponse, userCountResponse] = await Promise.all([
+                fetch('/api/recharges', { credentials: 'include' }),
+                fetch('/api/users/count', { credentials: 'include' })
+            ]);
+            
+            // Handle Recharges
+            const rechargeData = await rechargeResponse.json();
+            if (rechargeResponse.ok) {
+                const requests = rechargeData.map((req: any) => ({
                     ...req,
                     date: new Date(req.createdAt),
                 }));
                 setRechargeRequests(requests);
             } else {
-                throw new Error(data.message || 'Error al obtener solicitudes');
+                throw new Error(rechargeData.message || 'Error al obtener solicitudes');
             }
-        } catch (error: any) {
-             toast({ variant: 'destructive', title: 'Error', description: error.message });
-        }
-    }
-    
-    const fetchUserCount = async () => {
-        try {
-            const response = await fetch('/api/users/count');
-            const data = await response.json();
-            if(response.ok) {
-                setUserCount(data.userCount);
+
+            // Handle User Count
+            const userCountData = await userCountResponse.json();
+            if(userCountResponse.ok) {
+                setUserCount(userCountData.userCount);
             } else {
-                 throw new Error(data.message || 'Error al obtener el conteo de usuarios');
+                 throw new Error(userCountData.message || 'Error al obtener el conteo de usuarios');
             }
         } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Error de Conexión', description: 'No se pudo obtener el número de usuarios. ¿La BD está conectada?' });
+            toast({ variant: 'destructive', title: 'Error de Carga', description: error.message });
         }
-    }
+    }, [toast]);
 
     useEffect(() => {
-        fetchSettings();
-        fetchRechargeRequests();
-        fetchUserCount();
-    }, []);
+        // Redirect if user is not admin
+        if (!authLoading && (!user || user.role !== 'admin')) {
+             toast({ variant: 'destructive', title: 'Acceso Denegado', description: 'No tienes permiso para ver esta página.' });
+            router.push('/dashboard');
+            return;
+        }
+        
+        if (user && user.role === 'admin') {
+            fetchAdminData();
+        }
+    }, [user, authLoading, router, fetchAdminData, toast]);
 
 
     const handleRateUpdate = async () => {
@@ -79,7 +81,8 @@ export default function AdminPage() {
             const response = await fetch('/api/settings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ key: 'exchange_rate', value: exchangeRate.toString() })
+                body: JSON.stringify({ key: 'exchange_rate', value: exchangeRate.toString() }),
+                credentials: 'include'
             });
 
             const data = await response.json();
@@ -92,8 +95,7 @@ export default function AdminPage() {
                 title: 'Tasa Actualizada',
                 description: `La nueva tasa es 1 VTC = ${exchangeRate} Bs.`,
             });
-             // Re-fetch to confirm
-            fetchSettings();
+             // No need to re-fetch, we trust the update
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'Error', description: error.message });
         }
@@ -105,6 +107,7 @@ export default function AdminPage() {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: newStatus }),
+                credentials: 'include'
             });
 
             const data = await response.json();
@@ -119,13 +122,16 @@ export default function AdminPage() {
                 variant: newStatus === 'denied' ? 'destructive' : 'default'
             });
 
-            // Re-fetch to ensure data is consistent
-            fetchRechargeRequests();
+            fetchAdminData(); // Re-fetch all admin data to ensure consistency
 
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'Error', description: error.message });
         }
     };
+
+    if (authLoading || !user || user.role !== 'admin') {
+        return null; // Or a loading spinner
+    }
 
     return (
         <div className="container mx-auto p-4 md:p-8 space-y-8">

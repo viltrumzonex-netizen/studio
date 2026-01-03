@@ -16,17 +16,10 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, displayName: string) => Promise<void>;
   logout: () => Promise<void>;
-  refreshUser: () => void;
+  refreshUser: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  loading: true,
-  login: async () => {},
-  register: async () => {},
-  logout: async () => {},
-  refreshUser: () => {},
-});
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -34,6 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   const fetchSession = useCallback(async () => {
+    setLoading(true);
     try {
         const response = await fetch('/api/auth/session', { credentials: 'include' });
         if (response.ok) {
@@ -59,7 +53,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
-      credentials: 'include',
     });
 
     const data = await response.json();
@@ -67,8 +60,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error(data.message || 'Error al iniciar sesión.');
     }
     
-    setUser(data.user);
-    // No need to manually parse cookie, the API sets it and we trust the server state
+    // After login, fetch the session from the server to get the source of truth
+    await fetchSession();
   };
   
   const register = async (email: string, password: string, displayName: string) => {
@@ -76,7 +69,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password, displayName }),
-          credentials: 'include',
       });
 
       const data = await response.json();
@@ -84,12 +76,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           throw new Error(data.message || 'Error al registrar el usuario.');
       }
 
-      setUser(data.user);
+      // After register, fetch the session from the server
+      await fetchSession();
   };
 
   const logout = async () => {
     try {
-        await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+        await fetch('/api/auth/logout', { method: 'POST' });
     } catch (error) {
         console.error("Failed to call logout API", error);
     } finally {

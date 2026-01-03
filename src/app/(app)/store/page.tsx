@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { ShoppingBag } from "lucide-react";
 import { useWallet } from "@/hooks/use-wallet";
 import PurchaseDialog from "@/components/store/purchase-dialog";
@@ -15,21 +14,22 @@ export default function StorePage() {
     const [storeItems, setStoreItems] = useState<StoreItem[]>([]);
     const { toast } = useToast();
 
-    useEffect(() => {
-        const fetchItems = async () => {
-            try {
-                const response = await fetch('/api/store/items');
-                const data = await response.json();
-                if (!response.ok) {
-                    throw new Error(data.message || 'Error al cargar los productos de la tienda');
-                }
-                setStoreItems(data);
-            } catch (error: any) {
-                toast({ variant: 'destructive', title: 'Error', description: error.message });
+    const fetchItems = useCallback(async () => {
+        try {
+            const response = await fetch('/api/store/items', { credentials: 'include' });
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.message || 'Error al cargar los productos de la tienda');
             }
-        };
-        fetchItems();
+            setStoreItems(data);
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message });
+        }
     }, [toast]);
+
+    useEffect(() => {
+        fetchItems();
+    }, [fetchItems]);
 
 
     return (
