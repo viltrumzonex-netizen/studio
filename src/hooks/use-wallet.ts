@@ -28,19 +28,15 @@ const useWalletStore = create<WalletState>((set, get) => ({
     }
     set({ loading: true });
     try {
+      // Use Promise.all to fetch all required data in parallel
       const [walletRes, settingsRes, supplyRes] = await Promise.all([
         fetch(`/api/wallet/balance`, { credentials: 'include' }),
         fetch('/api/settings', { credentials: 'include' }),
         fetch('/api/wallet/supply', { credentials: 'include' })
       ]);
 
-      if (!walletRes.ok) {
-        // If wallet balance fails, it's a critical error (likely unauthenticated)
-        const errorData = await walletRes.json();
-        throw new Error(errorData.message || 'Error de autenticación al obtener datos del monedero.');
-      }
-
-      const walletData = await walletRes.json();
+      // Process successful responses, allow non-critical ones to fail gracefully
+      const walletData = walletRes.ok ? await walletRes.json() : { balance: 0, transactions: [] };
       const settingsData = settingsRes.ok ? await settingsRes.json() : [];
       const supplyData = supplyRes.ok ? await supplyRes.json() : { circulatingSupply: 0 };
       
@@ -52,47 +48,49 @@ const useWalletStore = create<WalletState>((set, get) => ({
         transactions: walletData.transactions || [],
         exchangeRate: newExchangeRate,
         circulatingSupply: supplyData.circulatingSupply || 0,
+        loading: false
       });
 
     } catch (error) {
       console.error("Failed to fetch wallet data:", error);
-      // On error, reset to a clean, non-authenticated state
-      set({ balance: 0, transactions: [], loading: false, circulatingSupply: 0 });
-    } finally {
-      set({ loading: false });
+      // On any error, reset to a clean, non-authenticated state
+      get().reset();
     }
   },
   reset: () => set({ balance: 0, transactions: [], circulatingSupply: 0, loading: true, exchangeRate: 36.5 }),
 }));
 
+// This effect will run once, and listen to auth changes.
+let walletInitialized = false;
+useAuth.subscribe(
+  (state) => state.user,
+  (user, prevUser) => {
+    if (user && !walletInitialized) {
+      walletInitialized = true;
+      useWalletStore.getState().fetchWalletData(user.uid);
+    } else if (!user && prevUser) {
+      // User logged out
+      walletInitialized = false;
+      useWalletStore.getState().reset();
+    }
+  }
+);
+
+
 export const useWallet = () => {
   const { user, loading: authLoading } = useAuth();
-  const state = useWalletStore();
-
-  useEffect(() => {
-    // If auth is loading, do nothing yet.
-    if (authLoading) {
-      return; 
-    }
-    
-    // If auth is done and we have a user, fetch their data.
-    if (user?.uid) {
-      state.fetchWalletData(user.uid);
-    } else {
-      // If auth is done and there's NO user, reset the wallet state.
-      state.reset();
-    }
-  }, [user?.uid, authLoading, state.fetchWalletData, state.reset]);
+  const walletState = useWalletStore();
 
   const refreshWallet = useCallback(() => {
-    if (user?.uid && !authLoading) {
-      state.fetchWalletData(user.uid);
+    if (user?.uid) {
+      walletState.fetchWalletData(user.uid);
     }
-  }, [user?.uid, authLoading, state.fetchWalletData]);
+  }, [user?.uid, walletState.fetchWalletData]);
 
+  // The wallet is loading if either the auth check is running OR the wallet data fetch is running.
   return {
-    ...state,
-    loading: authLoading || state.loading,
+    ...walletState,
+    loading: authLoading || walletState.loading,
     refreshWallet,
   };
 };

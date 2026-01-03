@@ -12,14 +12,15 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    // If authentication is done and there's NO user, redirect to login page.
+    // If authentication is finished and there is DEFINITELY no user, redirect to login.
     if (!authLoading && !user) {
       router.push('/');
     }
   }, [authLoading, user, router]);
 
-  // If we are loading OR there is no user (and we are about to redirect), show the loader.
-  if (authLoading || !user) {
+  // If authentication is loading, we must show a loading screen.
+  // We DON'T render children, as they might try to access user data that isn't ready.
+  if (authLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
          <div className="w-full max-w-md space-y-6 flex flex-col items-center">
@@ -42,16 +43,22 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  // If loading is finished AND we have a user, render the app layout.
-  return (
-    <div className="flex min-h-screen bg-background">
-        <Sidebar />
-        <div className="flex-1 flex flex-col">
-            <main className="flex-1 md:pb-0 pb-20 overflow-y-auto">
-                {children}
-            </main>
-            <BottomNav />
-        </div>
-    </div>
-  );
+  // If auth is done and we have a user, render the full app layout.
+  // The 'user' object is now guaranteed to be available in all children.
+  if (user) {
+    return (
+      <div className="flex min-h-screen bg-background">
+          <Sidebar />
+          <div className="flex-1 flex flex-col">
+              <main className="flex-1 md:pb-0 pb-20 overflow-y-auto">
+                  {children}
+              </main>
+              <BottomNav />
+          </div>
+      </div>
+    );
+  }
+
+  // If auth is done and there's no user, we are about to redirect. Return null or a loader.
+  return null;
 }

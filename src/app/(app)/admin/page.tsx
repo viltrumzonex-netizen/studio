@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,60 +19,60 @@ export default function AdminPage() {
     const { toast } = useToast();
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
-    const { exchangeRate: initialExchangeRate } = useWallet();
+    const { exchangeRate: initialExchangeRate, refreshWallet } = useWallet();
+    
     const [exchangeRate, setExchangeRate] = useState(0);
     const [rechargeRequests, setRechargeRequests] = useState<RechargeRequest[]>([]);
     const [userCount, setUserCount] = useState<number>(0);
+    const [loadingData, setLoadingData] = useState(true);
 
-    // Set initial exchange rate from the wallet hook once available
     useEffect(() => {
-        if(initialExchangeRate) {
+        if (initialExchangeRate) {
             setExchangeRate(initialExchangeRate);
         }
     }, [initialExchangeRate]);
 
     const fetchAdminData = useCallback(async () => {
+        if (!user || user.role !== 'admin') return;
+        setLoadingData(true);
         try {
             const [rechargeResponse, userCountResponse] = await Promise.all([
                 fetch('/api/recharges', { credentials: 'include' }),
                 fetch('/api/users/count', { credentials: 'include' })
             ]);
             
-            // Handle Recharges
-            const rechargeData = await rechargeResponse.json();
-            if (rechargeResponse.ok) {
-                const requests = rechargeData.map((req: any) => ({
-                    ...req,
-                    date: new Date(req.createdAt),
-                }));
-                setRechargeRequests(requests);
-            } else {
-                throw new Error(rechargeData.message || 'Error al obtener solicitudes');
+            if (!rechargeResponse.ok || !userCountResponse.ok) {
+                const rechargeError = !rechargeResponse.ok ? await rechargeResponse.json() : null;
+                const userCountError = !userCountResponse.ok ? await userCountResponse.json() : null;
+                throw new Error(rechargeError?.message || userCountError?.message || 'Error al cargar datos del administrador');
             }
 
-            // Handle User Count
+            const rechargeData = await rechargeResponse.json();
             const userCountData = await userCountResponse.json();
-            if(userCountResponse.ok) {
-                setUserCount(userCountData.userCount);
-            } else {
-                 throw new Error(userCountData.message || 'Error al obtener el conteo de usuarios');
-            }
+
+            const requests = rechargeData.map((req: any) => ({
+                ...req,
+                date: new Date(req.createdAt),
+            }));
+            setRechargeRequests(requests);
+            setUserCount(userCountData.userCount);
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'Error de Carga', description: error.message });
+        } finally {
+            setLoadingData(false);
         }
-    }, [toast]);
+    }, [toast, user]);
 
     useEffect(() => {
-        // Redirect if user is not admin
-        if (!authLoading && (!user || user.role !== 'admin')) {
-             toast({ variant: 'destructive', title: 'Acceso Denegado', description: 'No tienes permiso para ver esta página.' });
+        if (authLoading) return;
+
+        if (!user || user.role !== 'admin') {
+            toast({ variant: 'destructive', title: 'Acceso Denegado', description: 'No tienes permiso para ver esta página.' });
             router.push('/dashboard');
             return;
         }
         
-        if (user && user.role === 'admin') {
-            fetchAdminData();
-        }
+        fetchAdminData();
     }, [user, authLoading, router, fetchAdminData, toast]);
 
 
@@ -95,7 +95,7 @@ export default function AdminPage() {
                 title: 'Tasa Actualizada',
                 description: `La nueva tasa es 1 VTC = ${exchangeRate} Bs.`,
             });
-             // No need to re-fetch, we trust the update
+            refreshWallet(); // Refresh global state
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'Error', description: error.message });
         }
@@ -122,7 +122,8 @@ export default function AdminPage() {
                 variant: newStatus === 'denied' ? 'destructive' : 'default'
             });
 
-            fetchAdminData(); // Re-fetch all admin data to ensure consistency
+            fetchAdminData(); // Re-fetch only admin-specific data
+            refreshWallet(); // Refresh global wallet state for all users
 
         } catch (error: any) {
             toast({ variant: 'destructive', title: 'Error', description: error.message });
@@ -130,7 +131,7 @@ export default function AdminPage() {
     };
 
     if (authLoading || !user || user.role !== 'admin') {
-        return null; // Or a loading spinner
+        return null; // Or a loading spinner, but layout handles the main loading
     }
 
     return (
@@ -195,34 +196,40 @@ export default function AdminPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {rechargeRequests.map(req => (
-                                <TableRow key={req.id}>
-                                    <TableCell>{req.userEmail}</TableCell>
-                                    <TableCell>{Number(req.amountBs).toLocaleString('es-VE', { minimumFractionDigits: 2 })}</TableCell>
-                                    <TableCell>{req.method}</TableCell>
-                                    <TableCell>{req.reference}</TableCell>
-                                    <TableCell>{new Date(req.date).toLocaleDateString()}</TableCell>
-                                    <TableCell>
-                                        <Badge variant={req.status === 'pending' ? 'secondary' : 'default'} className={cn(
-                                            {
-                                                'bg-yellow-500/80 text-black': req.status === 'pending',
-                                                'bg-green-500/80 text-white': req.status === 'approved',
-                                                'bg-red-500/80 text-white': req.status === 'denied',
-                                            }
-                                            )}>
-                                            {req.status === 'pending' ? 'Pendiente' : (req.status === 'approved' ? 'Aprobado' : 'Denegado')}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right space-x-2">
-                                        {req.status === 'pending' && (
-                                            <>
-                                                <Button variant="outline" size="sm" className="border-green-500/50 text-green-400 hover:bg-green-500/10 hover:text-green-300" onClick={() => handleStatusChange(req.id, 'approved')}>Aprobar</Button>
-                                                <Button variant="outline" size="sm" className="border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300" onClick={() => handleStatusChange(req.id, 'denied')}>Denegar</Button>
-                                            </>
-                                        )}
-                                    </TableCell>
+                            {rechargeRequests.length === 0 && !loadingData ? (
+                                <TableRow>
+                                    <TableCell colSpan={7} className="text-center h-24">No hay solicitudes pendientes.</TableCell>
                                 </TableRow>
-                            ))}
+                            ) : (
+                                rechargeRequests.map(req => (
+                                    <TableRow key={req.id}>
+                                        <TableCell>{req.userEmail}</TableCell>
+                                        <TableCell>{Number(req.amountBs).toLocaleString('es-VE', { minimumFractionDigits: 2 })}</TableCell>
+                                        <TableCell>{req.method}</TableCell>
+                                        <TableCell>{req.reference}</TableCell>
+                                        <TableCell>{new Date(req.date).toLocaleDateString()}</TableCell>
+                                        <TableCell>
+                                            <Badge variant={req.status === 'pending' ? 'secondary' : 'default'} className={cn(
+                                                {
+                                                    'bg-yellow-500/80 text-black': req.status === 'pending',
+                                                    'bg-green-500/80 text-white': req.status === 'approved',
+                                                    'bg-red-500/80 text-white': req.status === 'denied',
+                                                }
+                                                )}>
+                                                {req.status === 'pending' ? 'Pendiente' : (req.status === 'approved' ? 'Aprobado' : 'Denegado')}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-right space-x-2">
+                                            {req.status === 'pending' && (
+                                                <>
+                                                    <Button variant="outline" size="sm" className="border-green-500/50 text-green-400 hover:bg-green-500/10 hover:text-green-300" onClick={() => handleStatusChange(req.id, 'approved')}>Aprobar</Button>
+                                                    <Button variant="outline" size="sm" className="border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300" onClick={() => handleStatusChange(req.id, 'denied')}>Denegar</Button>
+                                                </>
+                                            )}
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
                         </TableBody>
                     </Table>
                 </CardContent>

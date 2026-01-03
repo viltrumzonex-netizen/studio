@@ -1,7 +1,7 @@
 'use client';
 
-import { createContext, useContext, useState, type ReactNode, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { createContext, useContext, type ReactNode, useEffect } from 'react';
+import { create } from 'zustand';
 
 export type User = {
   uid: string;
@@ -10,97 +10,89 @@ export type User = {
   role: 'admin' | 'user';
 };
 
-interface AuthContextType {
+interface AuthState {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, displayName: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<any>;
+  register: (email: string, password: string, displayName: string) => Promise<any>;
   logout: () => Promise<void>;
-  refreshUser: () => Promise<void>;
+  fetchSession: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const useAuthStore = create<AuthState>((set) => ({
+    user: null,
+    loading: true,
+    fetchSession: async () => {
+        set({ loading: true });
+        try {
+            const response = await fetch('/api/auth/session');
+            if (response.ok) {
+                const data = await response.json();
+                set({ user: data.user });
+            } else {
+                set({ user: null });
+            }
+        } catch (e) {
+            console.error("Failed to fetch session", e);
+            set({ user: null });
+        } finally {
+            set({ loading: false });
+        }
+    },
+    login: async (email: string, password: string) => {
+        const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password }),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.message || 'Error al iniciar sesión.');
+        }
+        set({ user: data.user, loading: false });
+        return data;
+    },
+    register: async (email: string, password: string, displayName: string) => {
+        const response = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password, displayName }),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.message || 'Error al registrar el usuario.');
+        }
+        set({ user: data.user, loading: false });
+        return data;
+    },
+    logout: async () => {
+        try {
+            await fetch('/api/auth/logout', { method: 'POST' });
+        } catch (error) {
+            console.error("Failed to call logout API", error);
+        } finally {
+            set({ user: null, loading: false });
+             // Force a full page reload to clear all state from all hooks and libraries.
+            window.location.href = '/';
+        }
+    },
+}));
+
+
+const AuthContext = createContext<AuthState | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const router = useRouter();
-
-  const fetchSession = useCallback(async () => {
-    setLoading(true);
-    try {
-        const response = await fetch('/api/auth/session');
-        if (response.ok) {
-            const data = await response.json();
-            setUser(data.user);
-        } else {
-            setUser(null);
-        }
-    } catch (e) {
-        console.error("Failed to fetch session", e);
-        setUser(null);
-    } finally {
-        setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchSession();
-  }, [fetchSession]);
-
-  const login = async (email: string, password: string) => {
-    const response = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.message || 'Error al iniciar sesión.');
-    }
+    const store = useAuthStore();
     
-    // The API now returns the user object on success.
-    // Set the user directly to avoid race conditions with cookies.
-    setUser(data.user);
-  };
-  
-  const register = async (email: string, password: string, displayName: string) => {
-      const response = await fetch('/api/auth/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password, displayName }),
-      });
+    useEffect(() => {
+        store.fetchSession();
+    }, [store.fetchSession]);
 
-      const data = await response.json();
-      if (!response.ok) {
-          throw new Error(data.message || 'Error al registrar el usuario.');
-      }
-      
-      // The API now returns the user object on success.
-      // Set the user directly.
-      setUser(data.user);
-  };
-
-  const logout = async () => {
-    try {
-        await fetch('/api/auth/logout', { method: 'POST' });
-    } catch (error) {
-        console.error("Failed to call logout API", error);
-    } finally {
-        setUser(null);
-        // Force reload to clear all state and ensure clean redirect.
-        window.location.href = '/';
-    }
-  };
-
-  const value = { user, loading, login, register, logout, refreshUser: fetchSession };
-
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+    return (
+        <AuthContext.Provider value={store}>
+            {children}
+        </AuthContext.Provider>
+    );
 }
 
 export const useAuth = () => {
