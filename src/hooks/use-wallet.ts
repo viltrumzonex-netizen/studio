@@ -10,7 +10,7 @@ interface WalletState {
   circulatingSupply: number;
   exchangeRate: number;
   loading: boolean;
-  fetchWalletData: (userId: string) => Promise<void>;
+  fetchWalletData: () => Promise<void>;
   refreshWallet: () => void;
   reset: () => void;
 }
@@ -19,13 +19,20 @@ export const useWalletStore = create<WalletState>((set, get) => ({
   balance: 0,
   transactions: [],
   circulatingSupply: 0,
-  exchangeRate: 36.5, // Default/initial value
+  exchangeRate: 36.5,
   loading: true,
-  fetchWalletData: async (userId: string) => {
+  fetchWalletData: async () => {
+    // Ensure we don't fetch if there's no user.
+    const user = useAuth.getState().user;
+    if (!user) {
+      set({ loading: false });
+      return;
+    }
+
     set({ loading: true });
     try {
       const [walletRes, settingsRes, supplyRes] = await Promise.all([
-        fetch(`/api/wallet/balance`, { credentials: 'include' }),
+        fetch('/api/wallet/balance', { credentials: 'include' }),
         fetch('/api/settings', { credentials: 'include' }),
         fetch('/api/wallet/supply', { credentials: 'include' })
       ]);
@@ -52,15 +59,12 @@ export const useWalletStore = create<WalletState>((set, get) => ({
     }
   },
   refreshWallet: () => {
-    const authUser = useAuth.getState().user;
-    if (authUser) {
-      get().fetchWalletData(authUser.uid);
-    }
+    // The fetchWalletData function will now internally check for a user.
+    get().fetchWalletData();
   },
   reset: () => set({ balance: 0, transactions: [], circulatingSupply: 0, loading: false, exchangeRate: 36.5 }),
 }));
 
-// This is the hook that components will use
 export const useWallet = () => {
     const state = useWalletStore();
     return state;
