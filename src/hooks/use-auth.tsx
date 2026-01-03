@@ -16,17 +16,8 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, displayName: string) => Promise<void>;
   logout: () => Promise<void>;
+  refreshUser: () => void;
 }
-
-// Helper to get a cookie value by name
-const getCookie = (name: string): string | null => {
-    if (typeof window === 'undefined') return null;
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
-    return null;
-};
-
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
@@ -34,6 +25,7 @@ const AuthContext = createContext<AuthContextType>({
   login: async () => {},
   register: async () => {},
   logout: async () => {},
+  refreshUser: () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -41,30 +33,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  useEffect(() => {
-    setLoading(true);
+  const fetchSession = useCallback(async () => {
     try {
-        const sessionCookie = getCookie('viltrum_session');
-        if (sessionCookie) {
-            const sessionUser = JSON.parse(decodeURIComponent(sessionCookie));
-            setUser(sessionUser);
+        const response = await fetch('/api/auth/session', { credentials: 'include' });
+        if (response.ok) {
+            const data = await response.json();
+            setUser(data.user);
         } else {
             setUser(null);
         }
     } catch (e) {
-        console.error("Failed to parse session cookie", e);
+        console.error("Failed to fetch session", e);
         setUser(null);
     } finally {
         setLoading(false);
     }
   }, []);
 
+  useEffect(() => {
+    fetchSession();
+  }, [fetchSession]);
 
   const login = async (email: string, password: string) => {
     const response = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
+      credentials: 'include',
     });
 
     const data = await response.json();
@@ -73,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     
     setUser(data.user);
+    // No need to manually parse cookie, the API sets it and we trust the server state
   };
   
   const register = async (email: string, password: string, displayName: string) => {
@@ -80,6 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password, displayName }),
+          credentials: 'include',
       });
 
       const data = await response.json();
@@ -92,7 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
-        await fetch('/api/auth/logout', { method: 'POST' });
+        await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
     } catch (error) {
         console.error("Failed to call logout API", error);
     } finally {
@@ -101,7 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const value = { user, loading, login, register, logout };
+  const value = { user, loading, login, register, logout, refreshUser: fetchSession };
 
   return (
     <AuthContext.Provider value={value}>
