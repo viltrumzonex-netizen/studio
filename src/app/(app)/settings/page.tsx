@@ -2,8 +2,11 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/settings/theme-toggle";
+import SystemStatusPanel from "@/components/settings/system-status-panel";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function SettingsPage() {
+    const { user } = useAuth();
     return (
         <div className="container mx-auto p-4 md:p-8 space-y-6">
             <header>
@@ -22,6 +25,8 @@ export default function SettingsPage() {
                    <ThemeToggle />
                 </CardContent>
             </Card>
+
+            {user?.role === 'admin' && <SystemStatusPanel />}
         </div>
     )
 }
