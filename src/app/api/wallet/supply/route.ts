@@ -4,7 +4,7 @@ import { VTC_SYMBOL } from '@/lib/constants';
 
 export async function GET() {
   try {
-    // New logic: Circulating supply is the total supply minus what's left in the bank.
+    // This API route is public and does not require authentication.
     const [result]: any = await query(
       'SELECT total_supply, uncirculated_balance FROM system_wallet WHERE currency_symbol = ?',
       [VTC_SYMBOL]
