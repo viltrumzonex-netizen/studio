@@ -6,6 +6,7 @@ import BottomNav from '@/components/shared/bottom-nav';
 import Sidebar from '@/components/shared/sidebar';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { WalletProvider } from '@/hooks/use-wallet-provider';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useAuth();
@@ -20,7 +21,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   // If authentication is loading, we must show a loading screen.
   // We DON'T render children, as they might try to access user data that isn't ready.
-  if (authLoading) {
+  if (authLoading || !user) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
          <div className="w-full max-w-md space-y-6 flex flex-col items-center">
@@ -45,8 +46,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   // If auth is done and we have a user, render the full app layout.
   // The 'user' object is now guaranteed to be available in all children.
-  if (user) {
-    return (
+  return (
+    <WalletProvider>
       <div className="flex min-h-screen bg-background">
           <Sidebar />
           <div className="flex-1 flex flex-col">
@@ -56,9 +57,6 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               <BottomNav />
           </div>
       </div>
-    );
-  }
-
-  // If auth is done and there's no user, we are about to redirect. Return null or a loader.
-  return null;
+    </WalletProvider>
+  );
 }

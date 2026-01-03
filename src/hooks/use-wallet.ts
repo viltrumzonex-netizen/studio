@@ -57,35 +57,28 @@ const useWalletStore = create<WalletState>((set, get) => ({
       get().reset();
     }
   },
-  reset: () => set({ balance: 0, transactions: [], circulatingSupply: 0, loading: true, exchangeRate: 36.5 }),
+  reset: () => set({ balance: 0, transactions: [], circulatingSupply: 0, loading: false, exchangeRate: 36.5 }),
 }));
-
-// This effect will run once, and listen to auth changes.
-let walletInitialized = false;
-useAuth.subscribe(
-  (state) => state.user,
-  (user, prevUser) => {
-    if (user && !walletInitialized) {
-      walletInitialized = true;
-      useWalletStore.getState().fetchWalletData(user.uid);
-    } else if (!user && prevUser) {
-      // User logged out
-      walletInitialized = false;
-      useWalletStore.getState().reset();
-    }
-  }
-);
 
 
 export const useWallet = () => {
   const { user, loading: authLoading } = useAuth();
-  const walletState = useWalletStore();
+  const { fetchWalletData, reset, ...walletState } = useWalletStore();
+
+  useEffect(() => {
+    if (user?.uid) {
+      fetchWalletData(user.uid);
+    } else if (!authLoading) {
+      // If auth is done and there's no user, reset the wallet.
+      reset();
+    }
+  }, [user, authLoading, fetchWalletData, reset]);
 
   const refreshWallet = useCallback(() => {
     if (user?.uid) {
-      walletState.fetchWalletData(user.uid);
+      fetchWalletData(user.uid);
     }
-  }, [user?.uid, walletState.fetchWalletData]);
+  }, [user?.uid, fetchWalletData]);
 
   // The wallet is loading if either the auth check is running OR the wallet data fetch is running.
   return {
