@@ -38,7 +38,7 @@ export default function DashboardPage() {
                     <div className="space-y-2">
                         <div className="flex justify-between items-baseline">
                             <p className="text-muted-foreground">VTC en Circulación</p>
-                            <p className="font-bold font-headline text-lg">{Number(circulatingSupply).toLocaleString('de-DE')} <span className="text-sm text-muted-foreground">/ {TOTAL_SUPPLY.toLocaleString('de-DE')} VTC</span></p>
+                            <p className="font-bold font-headline text-lg">{Number(circulatingSupply).toLocaleString('es-VE')} <span className="text-sm text-muted-foreground">/ {TOTAL_SUPPLY.toLocaleString('es-VE')} VTC</span></p>
                         </div>
                         <Progress value={circulationPercentage} className="h-2" />
                     </div>
@@ -48,21 +48,21 @@ export default function DashboardPage() {
                                 <Package className="h-5 w-5 text-muted-foreground"/>
                                 <h3 className="text-md font-semibold">Suministro Total</h3>
                             </div>
-                            <p className="text-2xl font-bold font-headline text-glow">{TOTAL_SUPPLY.toLocaleString('de-DE')}</p>
+                            <p className="text-2xl font-bold font-headline text-glow">{TOTAL_SUPPLY.toLocaleString('es-VE')}</p>
                         </div>
                         <div>
                            <div className="flex items-center justify-center gap-2">
                                 <PackageCheck className="h-5 w-5 text-muted-foreground"/>
                                 <h3 className="text-md font-semibold">En Circulación</h3>
                             </div>
-                            <p className="text-2xl font-bold font-headline text-primary">{Number(circulatingSupply).toLocaleString('de-DE')}</p>
+                            <p className="text-2xl font-bold font-headline text-primary">{Number(circulatingSupply).toLocaleString('es-VE')}</p>
                         </div>
                         <div>
                            <div className="flex items-center justify-center gap-2">
                                 <PackageX className="h-5 w-5 text-muted-foreground"/>
                                 <h3 className="text-md font-semibold">Restantes</h3>
                             </div>
-                            <p className="text-2xl font-bold font-headline text-accent">{(TOTAL_SUPPLY - Number(circulatingSupply)).toLocaleString('de-DE')}</p>
+                            <p className="text-2xl font-bold font-headline text-accent">{(TOTAL_SUPPLY - Number(circulatingSupply)).toLocaleString('es-VE')}</p>
                         </div>
                     </div>
                 </CardContent>
