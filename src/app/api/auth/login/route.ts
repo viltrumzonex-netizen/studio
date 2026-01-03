@@ -33,7 +33,8 @@ export async function POST(req: NextRequest) {
       uid: String(dbUser.id),
       email: dbUser.email,
       displayName: dbUser.displayName,
-      role: dbUser.role,
+      // Ensure role is valid, default to 'user' if null/undefined
+      role: dbUser.role || 'user',
     };
     
     // Serialize the user data and set it in an httpOnly cookie

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import type { User } from '@/hooks/use-auth';
-import { serialize } from 'serialize-cookie';
+import { serialize } from 'cookie';
 
 export async function POST(req: NextRequest) {
   try {
@@ -24,8 +24,9 @@ export async function POST(req: NextRequest) {
     
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Explicitly set the role to 'user' on creation
     const result: any = await query(
-      'INSERT INTO users (email, password, displayName) VALUES (?, ?, ?)',
+      "INSERT INTO users (email, password, displayName, role) VALUES (?, ?, ?, 'user')",
       [email, hashedPassword, displayName]
     );
     
