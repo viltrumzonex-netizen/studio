@@ -2,7 +2,7 @@
 
 import { create } from 'zustand';
 import type { Transaction } from '@/lib/types';
-import { useAuth } from './use-auth';
+import { useAuthStore } from './use-auth';
 
 interface WalletState {
   balance: number;
@@ -23,7 +23,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
   loading: true,
   fetchWalletData: async () => {
     // Ensure we don't fetch if there's no user.
-    const user = useAuth.getState().user;
+    const user = useAuthStore.getState().user;
     if (!user) {
       set({ loading: false });
       return;
@@ -59,7 +59,6 @@ export const useWalletStore = create<WalletState>((set, get) => ({
     }
   },
   refreshWallet: () => {
-    // The fetchWalletData function will now internally check for a user.
     get().fetchWalletData();
   },
   reset: () => set({ balance: 0, transactions: [], circulatingSupply: 0, loading: false, exchangeRate: 36.5 }),

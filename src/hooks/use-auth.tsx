@@ -20,7 +20,7 @@ interface AuthState {
   fetchSession: () => Promise<void>;
 }
 
-const useAuthStore = create<AuthState>((set, get) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
     user: null,
     loading: true, 
     fetchSession: async () => {
@@ -87,10 +87,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const store = useAuthStore();
     const { user, loading } = store;
     
+    const fetchSession = useCallback(() => {
+        store.fetchSession();
+    }, [store]);
+
     // Initial fetch of session
     useEffect(() => {
-        store.fetchSession();
-    }, []);
+        fetchSession();
+    }, [fetchSession]);
 
     // Effect to fetch wallet data when user logs in
     useEffect(() => {
