@@ -39,35 +39,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         const supabase = get().supabase;
         if (!supabase) throw new Error("Supabase client is not initialized.");
 
-        // Step 1: Sign up the user in Supabase Auth
+        // Step 1: Sign up the user with email and password only.
+        // We pass the displayName in the options to have it available in the auth user object later
+        // but we will NOT rely on triggers.
         const { data: authData, error: authError } = await supabase.auth.signUp({
             email,
             password,
             options: {
                 data: {
                     display_name: displayName,
-                },
-            },
+                }
+            }
         });
 
         if (authError) throw authError;
         if (!authData.user) throw new Error("Registration failed: no user data returned.");
 
-        // Step 2: Insert the profile into the public.profiles table
-        const { error: profileError } = await supabase.from('profiles').insert({
-            id: authData.user.id,
-            display_name: displayName,
-            role: 'user'
-        });
-
-        if (profileError) {
-            // This is a critical error. We should ideally handle this gracefully,
-            // maybe by deleting the auth user or notifying an admin.
-            // For now, we'll throw the error to make it visible.
-            throw profileError;
-        }
-
-        // The onAuthStateChange listener will handle setting the user state.
+        // The onAuthStateChange listener will handle profile creation.
         return authData;
     },
     logout: async () => {
@@ -81,7 +69,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const { supabase, loading } = useAuthStore();
+    const { supabase } = useAuthStore();
 
     useEffect(() => {
         if (!supabase) {
@@ -93,52 +81,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             async (event: AuthChangeEvent, session: Session | null) => {
                 const currentUser = session?.user;
                 if (currentUser) {
-                    // Fetch profile to get role
-                    const { data: profile } = await supabase
+                    // Fetch profile to get role and display name
+                    const { data: profile, error: profileError } = await supabase
                         .from('profiles')
                         .select('role, display_name')
                         .eq('id', currentUser.id)
                         .single();
+                    
+                    if (profileError && profileError.code !== 'PGRST116') { // PGRST116 = 'exact one row not found'
+                        console.error("Error fetching profile:", profileError);
+                        useAuthStore.setState({ user: null, loading: false });
+                        return;
+                    }
 
-                    const simplifiedUser: User = {
-                        id: currentUser.id,
-                        email: currentUser.email,
-                        displayName: profile?.display_name || currentUser.user_metadata.display_name,
-                        role: profile?.role || 'user'
-                    };
-                    useAuthStore.setState({ user: simplifiedUser, loading: false });
+                    // If a user exists in auth but not in profiles, it's a fresh signup. Create the profile.
+                    if (!profile) {
+                         const { error: insertError } = await supabase.from('profiles').insert({
+                            id: currentUser.id,
+                            display_name: currentUser.user_metadata.display_name || 'Nuevo Usuario',
+                            role: 'user'
+                        });
+
+                        if (insertError) {
+                            console.error("Error creating profile:", insertError);
+                            // Log out the user if profile creation fails to prevent inconsistent state
+                            await supabase.auth.signOut();
+                            useAuthStore.setState({ user: null, loading: false });
+                            return;
+                        }
+                        
+                        // Re-fetch profile after creation to get the final state
+                        const { data: newProfile } = await supabase.from('profiles').select('role, display_name').eq('id', currentUser.id).single();
+                        
+                        const simplifiedUser: User = {
+                            id: currentUser.id,
+                            email: currentUser.email,
+                            displayName: newProfile?.display_name,
+                            role: newProfile?.role
+                        };
+                         useAuthStore.setState({ user: simplifiedUser, loading: false });
+
+                    } else {
+                         const simplifiedUser: User = {
+                            id: currentUser.id,
+                            email: currentUser.email,
+                            displayName: profile.display_name,
+                            role: profile.role
+                        };
+                        useAuthStore.setState({ user: simplifiedUser, loading: false });
+                    }
+                    
                     useWalletStore.getState().fetchWalletData();
+
                 } else {
                     useAuthStore.setState({ user: null, loading: false });
                     useWalletStore.getState().reset();
                 }
             }
         );
-
-        // Check initial session
-        const getInitialSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-                 const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('role, display_name')
-                    .eq('id', session.user.id)
-                    .single();
-
-                 const simplifiedUser: User = {
-                    id: session.user.id,
-                    email: session.user.email,
-                    displayName: profile?.display_name || session.user.user_metadata.display_name,
-                    role: profile?.role || 'user'
-                };
-                useAuthStore.setState({ user: simplifiedUser, loading: false });
-                useWalletStore.getState().fetchWalletData();
-            } else {
-                useAuthStore.setState({ user: null, loading: false });
-            }
-        };
-
-        getInitialSession();
 
         return () => {
             subscription?.unsubscribe();

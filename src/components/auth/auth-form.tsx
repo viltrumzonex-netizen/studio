@@ -56,7 +56,7 @@ export default function AuthForm() {
         } else {
             const { email, password, displayName } = values as z.infer<typeof registerSchema>;
             await register(email, password, displayName);
-            toast({ title: 'Registro Exitoso', description: `Verifica tu correo para completar el registro.` });
+            toast({ title: 'Registro Exitoso', description: `¡Bienvenido a Viltrum Wallet!` });
         }
         // Redirect is handled by the layout component based on user state
     } catch (error: any) {
