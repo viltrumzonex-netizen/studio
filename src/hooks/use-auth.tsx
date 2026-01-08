@@ -7,7 +7,7 @@ import { useWalletStore } from '@/hooks/use-wallet';
 import { createClient } from '@/lib/supabase/client';
 import type { AuthChangeEvent, Session, SupabaseClient, User as SupabaseUser } from '@supabase/supabase-js';
 
-// Define a simpler User type for our app state
+// Define un tipo de Usuario más simple para el estado de nuestra aplicación
 export type User = {
   id: string;
   email?: string;
@@ -24,37 +24,40 @@ interface AuthState {
   logout: () => Promise<void>;
 }
 
+// Creamos una única instancia del cliente para usarla en todo el store
+const supabaseClient = createClient();
+
 export const useAuthStore = create<AuthState>((set, get) => ({
     user: null,
     loading: true, 
-    supabase: createClient(),
+    supabase: supabaseClient,
     login: async (email, password) => {
         const supabase = get().supabase;
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        // User state will be set by onAuthStateChange
+        // El estado del usuario será actualizado por onAuthStateChange
         return data;
     },
     register: async (email, password, displayName) => {
         const supabase = get().supabase;
 
-        // Step 1: Sign up the user in Supabase Auth
+        // Paso 1: Registrar al usuario en Supabase Auth
         const { data: authData, error: signUpError } = await supabase.auth.signUp({
             email,
             password,
         });
 
         if (signUpError) {
-            console.error("Error during signUp:", signUpError);
+            console.error("Error durante el signUp:", signUpError);
             throw signUpError;
         }
 
         if (!authData.user) {
-            throw new Error("Registration succeeded but no user was returned. Please try logging in.");
+            throw new Error("El registro tuvo éxito pero no se devolvió ningún usuario. Por favor, intenta iniciar sesión.");
         }
 
-        // Step 2: Manually insert the profile into the public.profiles table.
-        // The RLS policy "Users can insert their own profile." allows this.
+        // Paso 2: Insertar manualmente el perfil en la tabla public.profiles.
+        // La política RLS "Users can insert their own profile." permite esta operación.
         const { error: profileError } = await supabase
             .from('profiles')
             .insert({ 
@@ -64,12 +67,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             });
 
         if (profileError) {
-            console.error("Error creating profile after sign-up:", profileError);
-            // Optional: You might want to delete the auth user if profile creation fails
+            console.error("Error al crear el perfil después del registro:", profileError);
+            // Opcional: Podrías querer eliminar el usuario de auth si la creación del perfil falla.
             // await supabase.auth.admin.deleteUser(authData.user.id);
-            throw new Error(`User registered, but failed to create profile: ${profileError.message}`);
+            throw new Error(`Usuario registrado, pero falló la creación del perfil: ${profileError.message}`);
         }
         
+        // Si todo sale bien, la sesión se actualizará y onAuthStateChange se encargará del resto.
         return authData;
     },
     logout: async () => {
@@ -81,48 +85,40 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const { supabase } = useAuthStore();
+    // Usamos la instancia única del cliente desde el store
+    const supabase = useAuthStore((state) => state.supabase);
 
     useEffect(() => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (event: AuthChangeEvent, session: Session | null) => {
                 const currentUser = session?.user;
                 if (currentUser) {
-                    // Fetch profile to get role and display name
-                    let { data: profile, error: profileError } = await supabase
+                    // Obtener perfil para obtener el rol y el nombre de usuario
+                    const { data: profile, error: profileError } = await supabase
                         .from('profiles')
                         .select('role, display_name')
                         .eq('id', currentUser.id)
                         .single();
                     
-                    if (profileError) {
-                         console.error("Error fetching profile:", profileError);
-                         if(profileError.code !== 'PGRST116') { 
-                            useAuthStore.setState({ user: null, loading: false });
-                            return;
-                         }
+                    if (profileError && profileError.code !== 'PGRST116') { // PGRST116: no rows found
+                         console.error("Error al obtener el perfil:", profileError);
+                         useAuthStore.setState({ user: null, loading: false });
+                         return;
                     }
 
-                    const userRole = profile?.role || 'user';
-                    
-                    // Set JWT claim for the user's role
-                    await supabase.auth.updateUser({
-                        data: {
-                            user_role: userRole
-                        }
-                    });
-                    
                     const simplifiedUser: User = {
                         id: currentUser.id,
                         email: currentUser.email,
                         displayName: profile?.display_name || 'Nuevo Usuario',
-                        role: userRole
+                        role: profile?.role || 'user'
                     };
                     useAuthStore.setState({ user: simplifiedUser, loading: false });
                     
+                    // Iniciar la carga de datos de la billetera
                     useWalletStore.getState().fetchWalletData();
 
                 } else {
+                    // Si no hay sesión, limpiar el estado
                     useAuthStore.setState({ user: null, loading: false });
                     useWalletStore.getState().reset();
                 }
@@ -144,7 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error('useAuth debe ser utilizado dentro de un AuthProvider');
   }
   return context;
 };
