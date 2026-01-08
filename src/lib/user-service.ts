@@ -3,20 +3,23 @@ import bcrypt from 'bcryptjs';
 import type { User } from '@/hooks/use-auth';
 import { config } from 'dotenv';
 
-config(); // Ensure environment variables are loaded
+config();
 
-// Separate, direct connection config for critical user functions.
-// Forcing 127.0.0.1 is more robust than 'localhost' in some environments.
 const dbConfig = {
-    host: process.env.DB_HOST || "127.0.0.1",
+    host: process.env.DB_HOST || 'srv1066.hstgr.io', // Using Hostinger's specific hostname
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_DATABASE,
 };
 
 async function getDbConnection() {
-    // This function now returns a promise of a connection.
-    return await mysql.createConnection(dbConfig);
+    try {
+        const connection = await mysql.createConnection(dbConfig);
+        return connection;
+    } catch (error) {
+        console.error("DB Connection Error in user-service:", error);
+        throw error; // Re-throw the error to be caught by API routes
+    }
 }
 
 
@@ -58,7 +61,6 @@ export async function createUser({ email, password, displayName }: CreateUserDTO
 
         const newUserId = result.insertId;
 
-        // Initialize VTC balance for the new user
         await connection.execute(
             'UPDATE users SET vtc_balance = 0 WHERE id = ?',
             [newUserId]
