@@ -1,6 +1,7 @@
+
 'use client';
 
-import { createContext, useContext, type ReactNode, useEffect } from 'react';
+import { createContext, useContext, type ReactNode, useEffect, useState } from 'react';
 import { create } from 'zustand';
 import { useWalletStore } from '@/hooks/use-wallet';
 import { createClient } from '@/lib/supabase/client';
@@ -17,7 +18,7 @@ export type User = {
 interface AuthState {
   user: User | null;
   loading: boolean;
-  supabase: SupabaseClient | null,
+  supabase: SupabaseClient;
   login: (email: string, password: string) => Promise<any>;
   register: (email: string, password: string, displayName: string) => Promise<any>;
   logout: () => Promise<void>;
@@ -29,7 +30,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     supabase: createClient(),
     login: async (email, password) => {
         const supabase = get().supabase;
-        if (!supabase) throw new Error("Supabase client is not initialized.");
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         // User state will be set by onAuthStateChange
@@ -37,40 +37,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     },
     register: async (email, password, displayName) => {
         const supabase = get().supabase;
-        if (!supabase) throw new Error("Supabase client is not initialized.");
-
-        // Step 1: Sign up the user cleanly.
-        const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        // The display name will be used by the onAuthStateChange listener to create the profile
+        const { data, error } = await supabase.auth.signUp({
             email,
             password,
         });
 
-        if (signUpError) throw signUpError;
-        if (!authData.user) throw new Error("Registration failed: no user returned.");
-        
-        // Step 2: Explicitly create the profile after successful sign-up.
-        const { error: profileError } = await supabase
-            .from('profiles')
-            .insert({ 
-                id: authData.user.id, 
-                display_name: displayName,
-                role: 'user' // Default role
-            });
-        
-        if (profileError) {
-            // This is a critical error. We should ideally handle cleanup,
-            // but for now, we'll throw to make the issue visible.
-            throw new Error(`Failed to create user profile: ${profileError.message}`);
-        }
-
-        // The onAuthStateChange listener will handle setting the user state.
-        return authData;
+        if (error) throw error;
+        // The profile will be created by the onAuthStateChange listener
+        // to avoid race conditions and permissions issues.
+        return data;
     },
     logout: async () => {
         const supabase = get().supabase;
-        if (!supabase) throw new Error("Supabase client is not initialized.");
         await supabase.auth.signOut();
-        // The user state will be set to null by the onAuthStateChange listener
     },
 }));
 
@@ -78,26 +58,50 @@ const AuthContext = createContext<AuthState | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const { supabase } = useAuthStore();
+    const [lastDisplayName, setLastDisplayName] = useState<string | null>(null);
+
+     useEffect(() => {
+        const originalRegister = useAuthStore.getState().register;
+        // Monkey-patch register to capture displayName
+        useAuthStore.setState({
+            register: async (email, password, displayName) => {
+                setLastDisplayName(displayName);
+                return originalRegister(email, password, displayName);
+            }
+        });
+    }, []);
 
     useEffect(() => {
-        if (!supabase) {
-          useAuthStore.setState({ loading: false });
-          return;
-        }
-
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (event: AuthChangeEvent, session: Session | null) => {
                 const currentUser = session?.user;
                 if (currentUser) {
                     // Fetch profile to get role and display name
-                    const { data: profile, error: profileError } = await supabase
+                    let { data: profile, error: profileError } = await supabase
                         .from('profiles')
                         .select('role, display_name')
                         .eq('id', currentUser.id)
                         .single();
                     
-                    if (profileError && profileError.code !== 'PGRST116') { 
-                        console.error("Error fetching profile:", profileError);
+                    // If profile doesn't exist, create it (likely a new user)
+                    if (profileError && profileError.code === 'PGRST116') {
+                        const { data: newProfile, error: insertError } = await supabase
+                            .from('profiles')
+                            .insert({
+                                id: currentUser.id,
+                                display_name: 'Nuevo Usuario', // Default name
+                                role: 'user'
+                            })
+                            .select()
+                            .single();
+                        
+                        if (insertError) {
+                            console.error("Error creating profile:", insertError);
+                        } else {
+                            profile = newProfile;
+                        }
+                    } else if (profileError) {
+                         console.error("Error fetching profile:", profileError);
                     }
                     
                     const simplifiedUser: User = {
@@ -120,7 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return () => {
             subscription?.unsubscribe();
         };
-    }, [supabase]);
+    }, [supabase, lastDisplayName]);
 
     return (
         <AuthContext.Provider value={useAuthStore(state => state)}>
@@ -134,6 +138,5 @@ export const useAuth = () => {
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
-  // This now returns the Zustand store's state
   return context;
 };
