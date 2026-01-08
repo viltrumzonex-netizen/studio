@@ -1,3 +1,4 @@
+
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
@@ -20,7 +21,6 @@ export default async function DbTestPage() {
                 .single();
 
             if (error) {
-                // Lanza el error para ser atrapado por el bloque catch
                 throw error;
             }
 
@@ -33,12 +33,11 @@ export default async function DbTestPage() {
 
         } catch (error: any) {
             connectionStatus = 'error';
-            // Personaliza el mensaje de error para los errores más comunes de Supabase
             if (error.code === '42501' || error.message.includes('security policies')) {
                 errorMessage = `Error de permisos (Row Level Security): La política de seguridad a nivel de fila impidió la lectura de la tabla 'config'. Asegúrate de que existe una política que permita la lectura pública: \n\nCREATE POLICY "Allow public read access to config." ON public.config FOR SELECT USING (true);`;
             } else if (error.message.includes('ECONNREFUSED') || error.message.includes('fetch failed')) {
                 errorMessage = `Error de red: No se pudo conectar a la URL de Supabase. Verifica que la NEXT_PUBLIC_SUPABASE_URL en tu archivo .env sea correcta y que tu conexión a internet esté funcionando.`;
-            } else if (error.message.includes('JWT') || error.message.includes('Unauthorized')) {
+            } else if (error.message.includes('JWT') || error.message.includes('Unauthorized') || error.message.includes('Invalid API key')) {
                  errorMessage = `Error de autenticación: La API Key (anon) parece ser inválida. Verifica que la NEXT_PUBLIC_SUPABASE_ANON_KEY en tu archivo .env sea la correcta.`;
             } else {
                 errorMessage = error.message;
