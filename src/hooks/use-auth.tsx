@@ -1,10 +1,10 @@
 'use client';
 
-import { createContext, useContext, type ReactNode, useEffect, useCallback } from 'react';
+import { createContext, useContext, type ReactNode, useEffect } from 'react';
 import { create } from 'zustand';
 import { useWalletStore } from '@/hooks/use-wallet';
 import { createClient } from '@/lib/supabase/client';
-import type { AuthChangeEvent, Session, User as SupabaseUser, SupabaseClient } from '@supabase/supabase-js';
+import type { AuthChangeEvent, Session, SupabaseClient } from '@supabase/supabase-js';
 
 // Define a simpler User type for our app state
 export type User = {
@@ -38,7 +38,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     register: async (email, password, displayName) => {
         const supabase = get().supabase;
         if (!supabase) throw new Error("Supabase client is not initialized.");
-        const { data, error } = await supabase.auth.signUp({
+        
+        // 1. Sign up the user
+        const { data: authData, error: authError } = await supabase.auth.signUp({
             email,
             password,
             options: {
@@ -47,9 +49,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 },
             },
         });
-        if (error) throw error;
-        // The user object is handled by the onAuthStateChange listener
-        return data;
+
+        if (authError) throw authError;
+        if (!authData.user) throw new Error("Registration failed: no user returned.");
+
+        // 2. Create the profile manually in the public.profiles table
+        const { error: profileError } = await supabase
+            .from('profiles')
+            .insert({ 
+                id: authData.user.id, 
+                display_name: displayName,
+                role: 'user' // Default role
+            });
+        
+        if (profileError) {
+            // Optional: If profile creation fails, you might want to clean up the auth user
+            // await supabase.auth.admin.deleteUser(authData.user.id); // Requires admin privileges
+            throw new Error(`Registration successful, but failed to create profile: ${profileError.message}`);
+        }
+
+        // The onAuthStateChange listener will handle setting the user state
+        return authData;
     },
     logout: async () => {
         const supabase = get().supabase;
@@ -71,14 +91,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            (event: AuthChangeEvent, session: Session | null) => {
+            async (event: AuthChangeEvent, session: Session | null) => {
                 const currentUser = session?.user;
                 if (currentUser) {
+                    // Fetch profile to get role
+                    const { data: profile } = await supabase
+                        .from('profiles')
+                        .select('role, display_name')
+                        .eq('id', currentUser.id)
+                        .single();
+
                     const simplifiedUser: User = {
                         id: currentUser.id,
                         email: currentUser.email,
-                        displayName: currentUser.user_metadata.display_name,
-                        role: currentUser.user_metadata.role || 'user'
+                        displayName: profile?.display_name || currentUser.user_metadata.display_name,
+                        role: profile?.role || 'user'
                     };
                     useAuthStore.setState({ user: simplifiedUser, loading: false });
                     useWalletStore.getState().fetchWalletData();
@@ -93,11 +120,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const getInitialSession = async () => {
             const { data: { session } } = await supabase.auth.getSession();
             if (session) {
+                 const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('role, display_name')
+                    .eq('id', session.user.id)
+                    .single();
+
                  const simplifiedUser: User = {
                     id: session.user.id,
                     email: session.user.email,
-                    displayName: session.user.user_metadata.display_name,
-                    role: session.user.user_metadata.role || 'user'
+                    displayName: profile?.display_name || session.user.user_metadata.display_name,
+                    role: profile?.role || 'user'
                 };
                 useAuthStore.setState({ user: simplifiedUser, loading: false });
                 useWalletStore.getState().fetchWalletData();
