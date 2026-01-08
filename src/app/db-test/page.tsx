@@ -42,7 +42,6 @@ export default async function DbTestPage() {
             } else {
                 errorMessage = error.message;
             }
-            console.error("Supabase Connection Error:", error);
         }
     }
 

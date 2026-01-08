@@ -37,15 +37,30 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     },
     register: async (email, password, displayName) => {
         const supabase = get().supabase;
-        // The display name will be used by the onAuthStateChange listener to create the profile
         const { data, error } = await supabase.auth.signUp({
             email,
             password,
         });
 
         if (error) throw error;
-        // The profile will be created by the onAuthStateChange listener
-        // to avoid race conditions and permissions issues.
+        
+        // After successful sign-up, immediately create the profile
+        if (data.user) {
+            const { error: profileError } = await supabase
+                .from('profiles')
+                .insert({
+                    id: data.user.id,
+                    display_name: displayName,
+                    role: 'user'
+                });
+            if (profileError) {
+                console.error("Error creating profile after sign-up:", profileError);
+                // Optional: handle this error, e.g., by signing the user out
+                // or showing a specific error message.
+                throw profileError;
+            }
+        }
+        
         return data;
     },
     logout: async () => {
@@ -58,18 +73,6 @@ const AuthContext = createContext<AuthState | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const { supabase } = useAuthStore();
-    const [lastDisplayName, setLastDisplayName] = useState<string | null>(null);
-
-     useEffect(() => {
-        const originalRegister = useAuthStore.getState().register;
-        // Monkey-patch register to capture displayName
-        useAuthStore.setState({
-            register: async (email, password, displayName) => {
-                setLastDisplayName(displayName);
-                return originalRegister(email, password, displayName);
-            }
-        });
-    }, []);
 
     useEffect(() => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -83,25 +86,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         .eq('id', currentUser.id)
                         .single();
                     
-                    // If profile doesn't exist, create it (likely a new user)
-                    if (profileError && profileError.code === 'PGRST116') {
-                        const { data: newProfile, error: insertError } = await supabase
-                            .from('profiles')
-                            .insert({
-                                id: currentUser.id,
-                                display_name: 'Nuevo Usuario', // Default name
-                                role: 'user'
-                            })
-                            .select()
-                            .single();
-                        
-                        if (insertError) {
-                            console.error("Error creating profile:", insertError);
-                        } else {
-                            profile = newProfile;
-                        }
-                    } else if (profileError) {
+                    if (profileError) {
                          console.error("Error fetching profile:", profileError);
+                    }
+
+                    // Set JWT claim for the user's role
+                    if (profile?.role) {
+                        await supabase.auth.updateUser({
+                            data: {
+                                user_role: profile.role
+                            }
+                        })
                     }
                     
                     const simplifiedUser: User = {
@@ -124,7 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return () => {
             subscription?.unsubscribe();
         };
-    }, [supabase, lastDisplayName]);
+    }, [supabase]);
 
     return (
         <AuthContext.Provider value={useAuthStore(state => state)}>
