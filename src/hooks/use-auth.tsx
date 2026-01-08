@@ -39,10 +39,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         const supabase = get().supabase;
         if (!supabase) throw new Error("Supabase client is not initialized.");
 
-        // Step 1: Sign up the user with email and password only.
-        // We pass the displayName in the options to have it available in the auth user object later
-        // but we will NOT rely on triggers.
-        const { data: authData, error: authError } = await supabase.auth.signUp({
+        // The database trigger 'handle_new_user' will automatically create the profile.
+        // We pass the display_name in the options' data to make it available to the trigger.
+        const { data, error } = await supabase.auth.signUp({
             email,
             password,
             options: {
@@ -52,11 +51,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             }
         });
 
-        if (authError) throw authError;
-        if (!authData.user) throw new Error("Registration failed: no user data returned.");
-
-        // The onAuthStateChange listener will handle profile creation.
-        return authData;
+        if (error) throw error;
+        
+        return data;
     },
     logout: async () => {
         const supabase = get().supabase;
@@ -88,48 +85,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         .eq('id', currentUser.id)
                         .single();
                     
-                    if (profileError && profileError.code !== 'PGRST116') { // PGRST116 = 'exact one row not found'
+                    // This error is expected if the profile is not yet created by the trigger.
+                    // We can log it for debugging, but we shouldn't block the auth flow.
+                    if (profileError && profileError.code !== 'PGRST116') { 
                         console.error("Error fetching profile:", profileError);
-                        useAuthStore.setState({ user: null, loading: false });
-                        return;
                     }
-
-                    // If a user exists in auth but not in profiles, it's a fresh signup. Create the profile.
-                    if (!profile) {
-                         const { error: insertError } = await supabase.from('profiles').insert({
-                            id: currentUser.id,
-                            display_name: currentUser.user_metadata.display_name || 'Nuevo Usuario',
-                            role: 'user'
-                        });
-
-                        if (insertError) {
-                            console.error("Error creating profile:", insertError);
-                            // Log out the user if profile creation fails to prevent inconsistent state
-                            await supabase.auth.signOut();
-                            useAuthStore.setState({ user: null, loading: false });
-                            return;
-                        }
-                        
-                        // Re-fetch profile after creation to get the final state
-                        const { data: newProfile } = await supabase.from('profiles').select('role, display_name').eq('id', currentUser.id).single();
-                        
-                        const simplifiedUser: User = {
-                            id: currentUser.id,
-                            email: currentUser.email,
-                            displayName: newProfile?.display_name,
-                            role: newProfile?.role
-                        };
-                         useAuthStore.setState({ user: simplifiedUser, loading: false });
-
-                    } else {
-                         const simplifiedUser: User = {
-                            id: currentUser.id,
-                            email: currentUser.email,
-                            displayName: profile.display_name,
-                            role: profile.role
-                        };
-                        useAuthStore.setState({ user: simplifiedUser, loading: false });
-                    }
+                    
+                    const simplifiedUser: User = {
+                        id: currentUser.id,
+                        email: currentUser.email,
+                        displayName: profile?.display_name || currentUser.user_metadata.display_name || 'Nuevo Usuario',
+                        role: profile?.role || 'user'
+                    };
+                    useAuthStore.setState({ user: simplifiedUser, loading: false });
                     
                     useWalletStore.getState().fetchWalletData();
 
