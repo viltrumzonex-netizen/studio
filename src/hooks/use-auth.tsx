@@ -39,21 +39,32 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         const supabase = get().supabase;
         if (!supabase) throw new Error("Supabase client is not initialized.");
 
-        // The database trigger 'handle_new_user' will automatically create the profile.
-        // We pass the display_name in the options' data to make it available to the trigger.
-        const { data, error } = await supabase.auth.signUp({
+        // Step 1: Sign up the user cleanly.
+        const { data: authData, error: signUpError } = await supabase.auth.signUp({
             email,
             password,
-            options: {
-                data: {
-                    display_name: displayName,
-                }
-            }
         });
 
-        if (error) throw error;
+        if (signUpError) throw signUpError;
+        if (!authData.user) throw new Error("Registration failed: no user returned.");
         
-        return data;
+        // Step 2: Explicitly create the profile after successful sign-up.
+        const { error: profileError } = await supabase
+            .from('profiles')
+            .insert({ 
+                id: authData.user.id, 
+                display_name: displayName,
+                role: 'user' // Default role
+            });
+        
+        if (profileError) {
+            // This is a critical error. We should ideally handle cleanup,
+            // but for now, we'll throw to make the issue visible.
+            throw new Error(`Failed to create user profile: ${profileError.message}`);
+        }
+
+        // The onAuthStateChange listener will handle setting the user state.
+        return authData;
     },
     logout: async () => {
         const supabase = get().supabase;
@@ -85,8 +96,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         .eq('id', currentUser.id)
                         .single();
                     
-                    // This error is expected if the profile is not yet created by the trigger.
-                    // We can log it for debugging, but we shouldn't block the auth flow.
                     if (profileError && profileError.code !== 'PGRST116') { 
                         console.error("Error fetching profile:", profileError);
                     }
@@ -94,7 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     const simplifiedUser: User = {
                         id: currentUser.id,
                         email: currentUser.email,
-                        displayName: profile?.display_name || currentUser.user_metadata.display_name || 'Nuevo Usuario',
+                        displayName: profile?.display_name || 'Nuevo Usuario',
                         role: profile?.role || 'user'
                     };
                     useAuthStore.setState({ user: simplifiedUser, loading: false });
