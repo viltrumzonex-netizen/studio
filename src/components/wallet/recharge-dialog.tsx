@@ -93,31 +93,11 @@ export default function RechargeDialog() {
   };
 
   const onSubmit = async (values: z.infer<typeof rechargeSchema>) => {
-    try {
-        const response = await fetch('/api/recharges', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(values),
-            credentials: 'include',
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.message || 'Error al enviar la solicitud.');
-        }
-        
-        toast({
-            title: "Solicitud de Recarga Enviada",
-            description: "Tu solicitud ha sido enviada y será procesada por un administrador.",
-        });
-
-        form.reset();
-        setOpen(false);
-
-    } catch (error: any) {
-        toast({ variant: 'destructive', title: "Error", description: error.message });
-    }
+    toast({
+        title: "Función no implementada",
+        description: "La notificación de recarga se conectará a Supabase pronto.",
+    });
+    setOpen(false);
   }
 
   return (

@@ -49,7 +49,7 @@ export default function SendReceiveDialog() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [open, setOpen] = useState(false);
   
-  const myWalletAddress = `0x${user?.uid.slice(0, 10)}...${user?.uid.slice(-4)}`;
+  const myWalletAddress = `0x${user?.id.slice(0, 10)}...${user?.id.slice(-4)}`;
 
   const form = useForm<z.infer<typeof sendSchema>>({
     resolver: zodResolver(sendSchema),
@@ -60,9 +60,9 @@ export default function SendReceiveDialog() {
     },
   });
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(myWalletAddress);
-    toast({ title: "¡Copiado!", description: "Dirección de billetera copiada al portapapeles." });
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: "¡Copiado!", description: `${label} copiado al portapapeles.` });
   };
 
   const handleSend = async (values: z.infer<typeof sendSchema>) => {
@@ -72,24 +72,11 @@ export default function SendReceiveDialog() {
     }
     setIsSubmitting(true);
     try {
-        const response = await fetch('/api/transactions/send', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(values),
-            credentials: 'include'
-        });
-
-        const data = await response.json();
-        if (!response.ok) {
-            throw new Error(data.message || "Error al enviar la transacción.");
-        }
-
+        // This will be re-implemented with Supabase
         toast({
-            title: "Transacción Exitosa",
-            description: `Has enviado ${values.amount} VTC a ${values.recipientEmail}.`
+            title: "Función no implementada",
+            description: "El envío de transacciones se conectará a Supabase pronto."
         });
-        
-        refreshWallet();
         form.reset();
         setOpen(false);
 

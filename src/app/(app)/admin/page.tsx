@@ -33,35 +33,9 @@ export default function AdminPage() {
     }, [initialExchangeRate]);
 
     const fetchAdminData = useCallback(async () => {
-        if (!user || user.role !== 'admin') return;
-        setLoadingData(true);
-        try {
-            const [rechargeResponse, userCountResponse] = await Promise.all([
-                fetch('/api/recharges', { credentials: 'include' }),
-                fetch('/api/users/count', { credentials: 'include' })
-            ]);
-            
-            if (!rechargeResponse.ok || !userCountResponse.ok) {
-                const rechargeError = !rechargeResponse.ok ? await rechargeResponse.json() : null;
-                const userCountError = !userCountResponse.ok ? await userCountResponse.json() : null;
-                throw new Error(rechargeError?.message || userCountError?.message || 'Error al cargar datos del administrador');
-            }
-
-            const rechargeData = await rechargeResponse.json();
-            const userCountData = await userCountResponse.json();
-
-            const requests = rechargeData.map((req: any) => ({
-                ...req,
-                date: new Date(req.createdAt),
-            }));
-            setRechargeRequests(requests);
-            setUserCount(userCountData.userCount);
-        } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Error de Carga', description: error.message });
-        } finally {
-            setLoadingData(false);
-        }
-    }, [toast, user]);
+        // This will be re-implemented with Supabase
+        setLoadingData(false);
+    }, []);
 
     useEffect(() => {
         if (authLoading) return;
@@ -77,57 +51,11 @@ export default function AdminPage() {
 
 
     const handleRateUpdate = async () => {
-        try {
-            const response = await fetch('/api/settings', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ key: 'exchange_rate', value: exchangeRate.toString() }),
-                credentials: 'include'
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Error al actualizar la tasa.');
-            }
-
-            toast({
-                title: 'Tasa Actualizada',
-                description: `La nueva tasa es 1 VTC = ${exchangeRate} Bs.`,
-            });
-            refreshWallet(); // Refresh global state
-        } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Error', description: error.message });
-        }
+        toast({ title: 'Función no implementada', description: 'Esto se conectará a Supabase pronto.' });
     };
 
     const handleStatusChange = async (id: string, newStatus: 'approved' | 'denied') => {
-        try {
-            const response = await fetch(`/api/recharges/${id}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: newStatus }),
-                credentials: 'include'
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Error al actualizar la solicitud.');
-            }
-            
-            toast({
-                title: `Solicitud ${newStatus === 'approved' ? 'Aprobada' : 'Denegada'}`,
-                description: `La solicitud ${id} ha sido actualizada.`,
-                variant: newStatus === 'denied' ? 'destructive' : 'default'
-            });
-
-            fetchAdminData(); // Re-fetch only admin-specific data
-            refreshWallet(); // Refresh global wallet state for all users
-
-        } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Error', description: error.message });
-        }
+        toast({ title: 'Función no implementada', description: 'Esto se conectará a Supabase pronto.' });
     };
 
     if (authLoading || !user || user.role !== 'admin') {

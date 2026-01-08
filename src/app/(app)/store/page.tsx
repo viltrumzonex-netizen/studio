@@ -14,22 +14,14 @@ export default function StorePage() {
     const [storeItems, setStoreItems] = useState<StoreItem[]>([]);
     const { toast } = useToast();
 
-    const fetchItems = useCallback(async () => {
-        try {
-            const response = await fetch('/api/store/items', { credentials: 'include' });
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.message || 'Error al cargar los productos de la tienda');
-            }
-            setStoreItems(data);
-        } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Error', description: error.message });
-        }
-    }, [toast]);
-
+    // The fetchItems logic will be re-implemented with Supabase
     useEffect(() => {
-        fetchItems();
-    }, [fetchItems]);
+        // You can add mock data here for testing if you like
+        // For example:
+        // setStoreItems([
+        //   { id: 1, name: 'Producto de Prueba', description: 'Esta es una descripción.', price: 10, stock: 5 },
+        // ]);
+    }, []);
 
 
     return (
@@ -55,10 +47,12 @@ export default function StorePage() {
                     </Card>
                 ))}
             </div>
-
-             <div className="text-center mt-12">
-                <p className="text-muted-foreground">Más productos próximamente...</p>
-            </div>
+            
+            {storeItems.length === 0 && (
+                <div className="text-center mt-12">
+                    <p className="text-muted-foreground">No hay productos disponibles en la tienda en este momento.</p>
+                </div>
+            )}
         </div>
     )
 }

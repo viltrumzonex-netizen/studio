@@ -4,35 +4,40 @@ import { createContext, useContext, type ReactNode, useEffect, useCallback } fro
 import { create } from 'zustand';
 import { useWalletStore } from '@/hooks/use-wallet';
 import { createClient } from '@/lib/supabase/client';
-import type { AuthChangeEvent, Session, User as SupabaseUser } from '@supabase/supabase-js';
+import type { AuthChangeEvent, Session, User as SupabaseUser, SupabaseClient } from '@supabase/supabase-js';
 
 // Define a simpler User type for our app state
 export type User = {
   id: string;
   email?: string;
-  // Add other user properties you need from Supabase user object
+  displayName?: string;
+  role?: string;
 };
 
 interface AuthState {
   user: User | null;
   loading: boolean;
+  supabase: SupabaseClient | null,
   login: (email: string, password: string) => Promise<any>;
   register: (email: string, password: string, displayName: string) => Promise<any>;
   logout: () => Promise<void>;
-  // No need for fetchSession as Supabase handles this
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
     user: null,
     loading: true, 
+    supabase: createClient(),
     login: async (email, password) => {
-        const supabase = createClient();
+        const supabase = get().supabase;
+        if (!supabase) throw new Error("Supabase client is not initialized.");
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        // User state will be set by onAuthStateChange
         return data;
     },
     register: async (email, password, displayName) => {
-        const supabase = createClient();
+        const supabase = get().supabase;
+        if (!supabase) throw new Error("Supabase client is not initialized.");
         const { data, error } = await supabase.auth.signUp({
             email,
             password,
@@ -47,7 +52,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return data;
     },
     logout: async () => {
-        const supabase = createClient();
+        const supabase = get().supabase;
+        if (!supabase) throw new Error("Supabase client is not initialized.");
         await supabase.auth.signOut();
         // The user state will be set to null by the onAuthStateChange listener
     },
@@ -56,12 +62,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const store = useAuthStore();
-    const { loading } = store;
+    const { supabase, loading } = useAuthStore();
 
     useEffect(() => {
-        const supabase = createClient();
-        
+        if (!supabase) {
+          useAuthStore.setState({ loading: false });
+          return;
+        }
+
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             (event: AuthChangeEvent, session: Session | null) => {
                 const currentUser = session?.user;
@@ -69,14 +77,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     const simplifiedUser: User = {
                         id: currentUser.id,
                         email: currentUser.email,
+                        displayName: currentUser.user_metadata.display_name,
+                        role: currentUser.user_metadata.role || 'user'
                     };
                     useAuthStore.setState({ user: simplifiedUser, loading: false });
-                    // When user is authenticated, fetch their wallet data
                     useWalletStore.getState().fetchWalletData();
                 } else {
-                    // When user logs out or session expires
                     useAuthStore.setState({ user: null, loading: false });
-                    // Clear wallet data as well
                     useWalletStore.getState().reset();
                 }
             }
@@ -89,6 +96,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                  const simplifiedUser: User = {
                     id: session.user.id,
                     email: session.user.email,
+                    displayName: session.user.user_metadata.display_name,
+                    role: session.user.user_metadata.role || 'user'
                 };
                 useAuthStore.setState({ user: simplifiedUser, loading: false });
                 useWalletStore.getState().fetchWalletData();
@@ -100,12 +109,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         getInitialSession();
 
         return () => {
-            subscription.unsubscribe();
+            subscription?.unsubscribe();
         };
-    }, []);
+    }, [supabase]);
 
     return (
-        <AuthContext.Provider value={store}>
+        <AuthContext.Provider value={useAuthStore(state => state)}>
             {children}
         </AuthContext.Provider>
     );
@@ -116,5 +125,6 @@ export const useAuth = () => {
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
+  // This now returns the Zustand store's state
   return context;
 };

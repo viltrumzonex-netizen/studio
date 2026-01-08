@@ -38,25 +38,11 @@ export default function PurchaseDialog({ item, userBalance }: PurchaseDialogProp
         }
 
         try {
-            const response = await fetch('/api/store/purchase', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ itemId: item.id }),
-                credentials: 'include'
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Error al procesar la compra.');
-            }
-
+            // This will be re-implemented with Supabase
             toast({
-                title: "¡Canje Exitoso!",
-                description: `Has canjeado ${item.name} por ${item.price} VTC.`,
+                title: "Función no implementada",
+                description: "La compra de productos se conectará a Supabase pronto."
             });
-            
-            refreshWallet();
 
         } catch(error: any) {
             toast({ variant: 'destructive', title: 'Error en el Canje', description: error.message });
