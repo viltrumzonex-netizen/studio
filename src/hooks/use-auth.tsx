@@ -39,8 +39,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         const supabase = get().supabase;
         if (!supabase) throw new Error("Supabase client is not initialized.");
         
-        // 1. Sign up the user
-        const { data: authData, error: authError } = await supabase.auth.signUp({
+        // The database trigger 'handle_new_user' will now automatically create the
+        // corresponding profile entry. The frontend only needs to call signUp.
+        const { data, error } = await supabase.auth.signUp({
             email,
             password,
             options: {
@@ -50,26 +51,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             },
         });
 
-        if (authError) throw authError;
-        if (!authData.user) throw new Error("Registration failed: no user returned.");
-
-        // 2. Create the profile manually in the public.profiles table
-        const { error: profileError } = await supabase
-            .from('profiles')
-            .insert({ 
-                id: authData.user.id, 
-                display_name: displayName,
-                role: 'user' // Default role
-            });
+        if (error) throw error;
         
-        if (profileError) {
-            // Optional: If profile creation fails, you might want to clean up the auth user
-            // await supabase.auth.admin.deleteUser(authData.user.id); // Requires admin privileges
-            throw new Error(`Registration successful, but failed to create profile: ${profileError.message}`);
-        }
-
-        // The onAuthStateChange listener will handle setting the user state
-        return authData;
+        // The onAuthStateChange listener will handle setting the user state.
+        return data;
     },
     logout: async () => {
         const supabase = get().supabase;
