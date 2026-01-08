@@ -1,7 +1,7 @@
 
 'use client';
 
-import { createContext, useContext, type ReactNode, useEffect, useState } from 'react';
+import { createContext, useContext, type ReactNode, useEffect } from 'react';
 import { create } from 'zustand';
 import { useWalletStore } from '@/hooks/use-wallet';
 import { createClient } from '@/lib/supabase/client';
@@ -37,28 +37,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     },
     register: async (email, password, displayName) => {
         const supabase = get().supabase;
+        // The database trigger 'on_auth_user_created' will handle creating the profile.
         const { data, error } = await supabase.auth.signUp({
             email,
             password,
+            options: {
+                data: {
+                    display_name: displayName,
+                }
+            }
         });
 
-        if (error) throw error;
-        
-        // After successful sign-up, immediately create the profile
-        if (data.user) {
-            const { error: profileError } = await supabase
-                .from('profiles')
-                .insert({
-                    id: data.user.id,
-                    display_name: displayName,
-                    role: 'user'
-                });
-            if (profileError) {
-                console.error("Error creating profile after sign-up:", profileError);
-                // Optional: handle this error, e.g., by signing the user out
-                // or showing a specific error message.
-                throw profileError;
-            }
+        if (error) {
+            console.error("Error during signUp:", error);
+            throw error;
         }
         
         return data;
@@ -88,22 +80,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     
                     if (profileError) {
                          console.error("Error fetching profile:", profileError);
+                         // If profile doesn't exist yet, it might be a race condition.
+                         // The user might not be fully available. Let's not set a user yet.
+                         // But if it's any other error, we log it.
+                         if(profileError.code !== 'PGRST116') { // PGRST116 = "exact one row expected"
+                            useAuthStore.setState({ user: null, loading: false });
+                            return;
+                         }
                     }
 
+                    const userRole = profile?.role || 'user';
+                    
                     // Set JWT claim for the user's role
-                    if (profile?.role) {
-                        await supabase.auth.updateUser({
-                            data: {
-                                user_role: profile.role
-                            }
-                        })
-                    }
+                    await supabase.auth.updateUser({
+                        data: {
+                            user_role: userRole
+                        }
+                    });
                     
                     const simplifiedUser: User = {
                         id: currentUser.id,
                         email: currentUser.email,
                         displayName: profile?.display_name || 'Nuevo Usuario',
-                        role: profile?.role || 'user'
+                        role: userRole
                     };
                     useAuthStore.setState({ user: simplifiedUser, loading: false });
                     
