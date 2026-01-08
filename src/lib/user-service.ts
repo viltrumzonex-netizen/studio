@@ -5,22 +5,18 @@ import { config } from 'dotenv';
 
 config(); // Ensure environment variables are loaded
 
-// Separate, direct connection config for critical user functions
+// Separate, direct connection config for critical user functions.
+// Forcing 127.0.0.1 is more robust than 'localhost' in some environments.
 const dbConfig = {
-    host: process.env.DB_HOST,
+    host: process.env.DB_HOST || "127.0.0.1",
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_DATABASE,
 };
 
 async function getDbConnection() {
-    try {
-        const connection = await mysql.createConnection(dbConfig);
-        return connection;
-    } catch (error) {
-        console.error("Database connection failed in user-service:", error);
-        throw new Error("Could not connect to the database.");
-    }
+    // This function now returns a promise of a connection.
+    return await mysql.createConnection(dbConfig);
 }
 
 
@@ -61,6 +57,12 @@ export async function createUser({ email, password, displayName }: CreateUserDTO
         }
 
         const newUserId = result.insertId;
+
+        // Initialize VTC balance for the new user
+        await connection.execute(
+            'UPDATE users SET vtc_balance = 0 WHERE id = ?',
+            [newUserId]
+        );
 
         return {
             uid: newUserId.toString(),

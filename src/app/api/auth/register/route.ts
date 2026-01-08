@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
 
   } catch (error) {
     console.error('[API_REGISTER_ERROR]', error);
-    const errorMessage = error instanceof Error ? error.message : 'Error interno del servidor.';
+    const errorMessage = error instanceof Error ? `Error de Conexión: ${error.message}` : 'Error interno del servidor.';
     return NextResponse.json({ message: errorMessage }, { status: 500 });
   }
 }
