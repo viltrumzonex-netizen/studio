@@ -37,23 +37,40 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     },
     register: async (email, password, displayName) => {
         const supabase = get().supabase;
-        // The database trigger 'on_auth_user_created' will handle creating the profile.
-        const { data, error } = await supabase.auth.signUp({
+
+        // Step 1: Sign up the user in Supabase Auth
+        const { data: authData, error: signUpError } = await supabase.auth.signUp({
             email,
             password,
-            options: {
-                data: {
-                    display_name: displayName,
-                }
-            }
         });
 
-        if (error) {
-            console.error("Error during signUp:", error);
-            throw error;
+        if (signUpError) {
+            console.error("Error during signUp:", signUpError);
+            throw signUpError;
+        }
+
+        if (!authData.user) {
+            throw new Error("Registration succeeded but no user was returned. Please try logging in.");
+        }
+
+        // Step 2: Manually insert the profile into the public.profiles table.
+        // The RLS policy "Users can insert their own profile." allows this.
+        const { error: profileError } = await supabase
+            .from('profiles')
+            .insert({ 
+                id: authData.user.id, 
+                display_name: displayName,
+                role: 'user' 
+            });
+
+        if (profileError) {
+            console.error("Error creating profile after sign-up:", profileError);
+            // Optional: You might want to delete the auth user if profile creation fails
+            // await supabase.auth.admin.deleteUser(authData.user.id);
+            throw new Error(`User registered, but failed to create profile: ${profileError.message}`);
         }
         
-        return data;
+        return authData;
     },
     logout: async () => {
         const supabase = get().supabase;
@@ -80,10 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     
                     if (profileError) {
                          console.error("Error fetching profile:", profileError);
-                         // If profile doesn't exist yet, it might be a race condition.
-                         // The user might not be fully available. Let's not set a user yet.
-                         // But if it's any other error, we log it.
-                         if(profileError.code !== 'PGRST116') { // PGRST116 = "exact one row expected"
+                         if(profileError.code !== 'PGRST116') { 
                             useAuthStore.setState({ user: null, loading: false });
                             return;
                          }
