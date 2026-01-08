@@ -2,7 +2,6 @@ import mysql from 'mysql2/promise';
 import { config } from 'dotenv';
 import type { Pool, PoolConnection } from 'mysql2/promise';
 
-// Cargar variables de entorno del archivo .env
 config();
 
 let pool: Pool;
