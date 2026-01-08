@@ -36,7 +36,6 @@ export default function AuthForm() {
   const [activeTab, setActiveTab] = useState('login');
   const { toast } = useToast();
   const { login, register } = useAuth();
-  const router = useRouter();
   
   const form = useForm<z.infer<typeof loginSchema> | z.infer<typeof registerSchema>>({
     resolver: zodResolver(activeTab === 'login' ? loginSchema : registerSchema),
@@ -50,20 +49,16 @@ export default function AuthForm() {
   const handleAuthAction = async (values: z.infer<typeof loginSchema> | z.infer<typeof registerSchema>) => {
     setIsSubmitting(true);
     try {
-        let result;
         if (activeTab === 'login') {
             const { email, password } = values as z.infer<typeof loginSchema>;
-            result = await login(email, password);
+            await login(email, password);
             toast({ title: 'Inicio de Sesión Exitoso', description: "¡Bienvenido de vuelta!" });
         } else {
             const { email, password, displayName } = values as z.infer<typeof registerSchema>;
-            result = await register(email, password, displayName);
-            toast({ title: 'Registro Exitoso', description: `¡Bienvenido a Viltrum Wallet, ${displayName}!` });
+            await register(email, password, displayName);
+            toast({ title: 'Registro Exitoso', description: `Verifica tu correo para completar el registro.` });
         }
-        // After successful login or register, the useAuth hook will update the user state,
-        // and the redirect will be handled by the effect in the main page.
-        // We no longer need to manually redirect here.
-
+        // Redirect is handled by the layout component based on user state
     } catch (error: any) {
       toast({
         variant: 'destructive',
