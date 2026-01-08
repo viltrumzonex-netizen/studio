@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
-import bcrypt from 'bcryptjs';
+import { findUserByEmail, createUser } from '@/lib/user-service';
 import type { User } from '@/hooks/use-auth';
 import { serialize } from 'cookie';
 
@@ -15,30 +14,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'La contraseña debe tener al menos 6 caracteres.' }, { status: 400 });
     }
 
-    const existingUsers: any = await query('SELECT id FROM users WHERE email = ?', [email]);
+    const existingUser = await findUserByEmail(email);
     
-    if (existingUsers && existingUsers.length > 0) {
+    if (existingUser) {
         return NextResponse.json({ message: 'El correo electrónico ya está en uso.' }, { status: 409 });
     }
     
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const result: any = await query(
-      "INSERT INTO users (email, password, displayName, role) VALUES (?, ?, ?, 'user')",
-      [email, hashedPassword, displayName]
-    );
+    const newUser = await createUser({ email, password, displayName });
     
-    if (!result.insertId) {
-        throw new Error('No se pudo crear el usuario.');
-    }
-    
-    const newUserId = result.insertId;
-
     const user: User = {
-        uid: newUserId.toString(),
-        email,
-        displayName,
-        role: 'user', 
+        uid: newUser.uid,
+        email: newUser.email,
+        displayName: newUser.displayName,
+        role: newUser.role, 
     };
 
     const sessionCookie = serialize('viltrum_session', JSON.stringify(user), {
@@ -55,6 +43,7 @@ export async function POST(req: NextRequest) {
 
   } catch (error) {
     console.error('[API_REGISTER_ERROR]', error);
-    return NextResponse.json({ message: 'Error interno del servidor.' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Error interno del servidor.';
+    return NextResponse.json({ message: errorMessage }, { status: 500 });
   }
 }

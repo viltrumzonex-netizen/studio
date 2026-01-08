@@ -4,43 +4,52 @@ import type { Pool, PoolConnection } from 'mysql2/promise';
 
 config();
 
-let pool: Pool;
+// This global variable will hold the connection pool.
+// It's declared here to be cached across function invocations in a serverless environment.
+let pool: Pool | null = null;
 
 const getPool = () => {
+    // If the pool doesn't exist, create it.
     if (!pool) {
-        pool = mysql.createPool({
-            host: process.env.DB_HOST,
-            user: process.env.DB_USER,
-            password: process.env.DB_PASSWORD,
-            database: process.env.DB_DATABASE,
-            waitForConnections: true,
-            connectionLimit: 10,
-            queueLimit: 0
-        });
+        console.log('Creating new database connection pool...');
+        try {
+            pool = mysql.createPool({
+                host: process.env.DB_HOST,
+                user: process.env.DB_USER,
+                password: process.env.DB_PASSWORD,
+                database: process.env.DB_DATABASE,
+                waitForConnections: true,
+                connectionLimit: 10,
+                queueLimit: 0
+            });
+        } catch (error) {
+            console.error("Failed to create database pool:", error);
+            // If pool creation fails, we throw the error to be caught by the caller.
+            throw error;
+        }
     }
     return pool;
 }
 
-
 /**
- * Ejecuta una consulta SQL a la base de datos usando un pool de conexiones.
- * @param sql La consulta SQL a ejecutar.
- * @param params Los parámetros para la consulta SQL.
- * @returns El resultado de la consulta.
+ * Executes a SQL query using the connection pool.
+ * @param sql The SQL query to execute.
+ * @param params The parameters for the SQL query.
+ * @returns The result of the query.
  */
 export async function query(sql: string, params: any[]) {
-    const dbPool = getPool();
+    const dbPool = getPool(); // Get the cached pool
     try {
         const [rows] = await dbPool.execute(sql, params);
         return rows;
     } catch (error) {
-        console.error("Fallo en la consulta a la base de datos:", error);
+        console.error("Database query failed:", error);
         throw error;
     }
 }
 
 /**
- * Proporciona un pool de conexiones para transacciones.
+ * Provides a connection pool for transactions.
  */
 const transactionPool = {
     getConnection: async (): Promise<PoolConnection> => {

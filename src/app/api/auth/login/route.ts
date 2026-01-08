@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { findUserByEmail } from '@/lib/user-service';
 import type { User } from '@/hooks/use-auth';
 import bcrypt from 'bcryptjs';
 import { serialize } from 'cookie';
@@ -12,16 +12,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Correo y contraseña son requeridos.' }, { status: 400 });
     }
 
-    const results: any = await query(
-      'SELECT id, email, displayName, role, password FROM users WHERE email = ?',
-      [email]
-    );
+    const dbUser = await findUserByEmail(email);
 
-    if (!results || results.length === 0) {
+    if (!dbUser) {
       return NextResponse.json({ message: 'Credenciales inválidas.' }, { status: 401 });
     }
-
-    const dbUser = results[0];
 
     const passwordMatches = await bcrypt.compare(password, dbUser.password);
 
@@ -33,7 +28,6 @@ export async function POST(req: NextRequest) {
       uid: String(dbUser.id),
       email: dbUser.email,
       displayName: dbUser.displayName,
-      // Ensure role is valid, default to 'user' if null/undefined
       role: dbUser.role || 'user',
     };
     
@@ -51,6 +45,7 @@ export async function POST(req: NextRequest) {
 
   } catch (error) {
     console.error('[API_LOGIN_ERROR]', error);
-    return NextResponse.json({ message: 'Error interno del servidor.' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Error interno del servidor.';
+    return NextResponse.json({ message: errorMessage }, { status: 500 });
   }
 }
