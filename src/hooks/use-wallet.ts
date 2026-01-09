@@ -29,11 +29,6 @@ export const useWalletStore = create<WalletState>((set) => ({
   ...initialState,
   fetchWalletData: async (user: User) => {
     const supabase = createClient();
-    if (!user) {
-      set({ ...initialState, loading: false });
-      return;
-    }
-    
     set({ loading: true });
 
     try {
@@ -43,11 +38,11 @@ export const useWalletStore = create<WalletState>((set) => ({
         supabase.rpc('get_circulating_supply'),
         supabase.from('config').select('value').eq('key', 'exchange_rate').single()
       ]);
-
-      if (balanceRes.error) throw balanceRes.error;
-      if (transactionsRes.error) throw transactionsRes.error;
-      if (circulatingSupplyRes.error) throw circulatingSupplyRes.error;
-      if (exchangeRateRes.error) throw exchangeRateRes.error;
+      
+      const errors = [balanceRes.error, transactionsRes.error, circulatingSupplyRes.error, exchangeRateRes.error].filter(Boolean);
+      if (errors.length > 0) {
+        throw new Error(errors.map(e => e?.message).join(', '));
+      }
 
       set({
         balance: balanceRes.data ?? 0,
@@ -59,48 +54,48 @@ export const useWalletStore = create<WalletState>((set) => ({
 
     } catch (error: any) {
       console.error('Error fetching wallet data:', error.message);
-      set({ ...initialState, loading: false, exchangeRate: 36.5 }); // Resetea pero mantiene una tasa por defecto
+      // Reset to a non-loading state but keep potentially fetched partial data if needed, or reset completely.
+      set({ ...initialState, loading: false });
     }
   },
-  reset: () => set(initialState),
+  reset: () => set({ ...initialState, loading: false }),
 }));
-
 
 export const useWallet = () => {
     const walletState = useWalletStore();
-    const { fetchWalletData, reset } = useWalletStore.getState();
+    const { fetchWalletData, reset } = walletState;
 
     useEffect(() => {
+        // Subscribe to auth changes
         const unsubscribe = useAuthStore.subscribe(
             (state, prevState) => {
                 const newUser = state.user;
                 const oldUser = prevState.user;
 
-                // Solo actuar si el ID de usuario cambia
-                if (newUser?.id !== oldUser?.id) {
-                    if (newUser) {
-                        fetchWalletData(newUser);
-                    } else {
-                        reset();
-                    }
+                // User logged in
+                if (newUser && newUser.id !== oldUser?.id) {
+                    fetchWalletData(newUser);
+                }
+                // User logged out
+                else if (!newUser && oldUser) {
+                    reset();
                 }
             }
         );
         
-        // Comprobar estado inicial en el montaje
+        // Initial check on mount
         const initialUser = useAuthStore.getState().user;
         if (initialUser) {
             fetchWalletData(initialUser);
         } else {
-             // Asegurarse de que no se quede cargando si no hay usuario inicial
-            useWalletStore.setState({ loading: false });
+            // If there's no user on mount, ensure wallet isn't in a loading state.
+            reset();
         }
 
         return () => {
             unsubscribe();
         };
-    // El array de dependencias vacío es correcto aquí para que el efecto se ejecute solo una vez
-    // y establezca la suscripción. Las actualizaciones son manejadas por la suscripción misma.
+    // fetchWalletData and reset are stable, so this effect runs once on mount.
     }, [fetchWalletData, reset]);
 
     const refreshWallet = () => {

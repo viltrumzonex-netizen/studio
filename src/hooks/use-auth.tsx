@@ -5,7 +5,6 @@ import { createContext, useContext, type ReactNode, useEffect } from 'react';
 import { create } from 'zustand';
 import { createClient } from '@/lib/supabase/client';
 import type { SupabaseClient, Session } from '@supabase/supabase-js';
-import { useWalletStore } from './use-wallet';
 
 export type User = {
   id: string;
@@ -32,7 +31,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     login: async (email, password) => {
         const { data, error } = await get().supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        // onAuthStateChange se encargará de actualizar el estado
         return data;
     },
     register: async (email, password, displayName) => {
@@ -46,12 +44,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             }
         });
         if (error) throw error;
-        // El trigger de la DB creará el perfil, y onAuthStateChange se encargará del resto
         return data;
     },
     logout: async () => {
         await get().supabase.auth.signOut();
-        // onAuthStateChange se encargará de limpiar el estado
     },
 }));
 
@@ -61,26 +57,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const store = useAuthStore();
 
     useEffect(() => {
-        const handleAuthStateChange = async (event: string, session: Session | null) => {
+        const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(async (event, session) => {
             if (event === 'SIGNED_OUT' || !session) {
                 useAuthStore.setState({ user: null, loading: false });
-                // La limpieza de la billetera es manejada por su propio hook
                 return;
             }
             
             if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
                 useAuthStore.setState({ loading: true });
                 try {
-                    // Consulta directa al perfil del usuario, forzando un único resultado
-                    // con .limit(1) como salvaguarda contra el error 'Cannot coerce...'.
                     const { data: profile, error: profileError } = await supabaseClient
                         .from('profiles')
                         .select('role, display_name')
                         .eq('id', session.user.id)
-                        .limit(1) // Salvaguarda crucial
-                        .single();
+                        .limit(1) // Ensure we only ever get one row.
+                        .single(); // Fails if not exactly one row is returned (or zero if `maybeSingle` is used)
 
                     if (profileError) {
+                        // This error will be thrown if RLS prevents access or if more than one row is found.
                         throw new Error(`No se pudo obtener el perfil: ${profileError.message}`);
                     }
                     
@@ -99,9 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     useAuthStore.setState({ user: null, loading: false });
                 }
             }
-        };
-
-        const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(handleAuthStateChange);
+        });
 
         return () => {
             subscription?.unsubscribe();

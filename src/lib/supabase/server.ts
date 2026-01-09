@@ -9,7 +9,9 @@ export function createClient() {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   
   if (!supabaseUrl || !supabaseAnonKey) {
+    // This will be logged on the server, which is helpful for debugging.
     console.error("Error del servidor de Supabase: Las variables de entorno NEXT_PUBLIC_SUPABASE_URL o NEXT_PUBLIC_SUPABASE_ANON_KEY no están configuradas.");
+    // Return null or throw an error, depending on how you want to handle missing config
     return null;
   }
 
