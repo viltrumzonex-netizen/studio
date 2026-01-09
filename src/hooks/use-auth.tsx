@@ -32,7 +32,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     login: async (email, password) => {
         const { data, error } = await get().supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        // El estado se actualizará a través de onAuthStateChange
+        // onAuthStateChange se encargará de actualizar el estado
         return data;
     },
     register: async (email, password, displayName) => {
@@ -46,12 +46,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             }
         });
         if (error) throw error;
-        // El perfil se crea mediante un trigger en la DB, onAuthStateChange se encargará del resto.
+        // El trigger de la DB creará el perfil, y onAuthStateChange se encargará del resto
         return data;
     },
     logout: async () => {
         await get().supabase.auth.signOut();
-        // El estado se limpiará a través de onAuthStateChange
+        // onAuthStateChange se encargará de limpiar el estado
     },
 }));
 
@@ -64,30 +64,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const handleAuthStateChange = async (event: string, session: Session | null) => {
             if (event === 'SIGNED_OUT' || !session) {
                 useAuthStore.setState({ user: null, loading: false });
-                useWalletStore.getState().reset();
+                // La limpieza de la billetera es manejada por su propio hook
                 return;
             }
             
-            // Este evento se dispara tanto en el login/registro como al cargar la página con una sesión existente.
             if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-                // Solo intentar obtener el perfil si no tenemos ya un usuario.
-                // Esto previene bucles si múltiples eventos se disparan rápido.
-                if (useAuthStore.getState().user?.id === session.user.id) {
-                    return;
-                }
-
                 useAuthStore.setState({ loading: true });
                 try {
-                    // Consulta directa al perfil del usuario.
-                    // Con RLS, esto solo debe devolver la fila del usuario autenticado.
+                    // Consulta directa al perfil del usuario, forzando un único resultado
+                    // con .limit(1) como salvaguarda contra el error 'Cannot coerce...'.
                     const { data: profile, error: profileError } = await supabaseClient
                         .from('profiles')
                         .select('role, display_name')
                         .eq('id', session.user.id)
+                        .limit(1) // Salvaguarda crucial
                         .single();
 
                     if (profileError) {
-                        // Lanzar el error para que sea capturado por el bloque catch.
                         throw new Error(`No se pudo obtener el perfil: ${profileError.message}`);
                     }
                     
@@ -99,8 +92,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     };
                     
                     useAuthStore.setState({ user: simplifiedUser, loading: false });
-                    // La carga de la billetera es manejada por el hook useWallet,
-                    // que se suscribe a los cambios de useAuthStore.
 
                 } catch (error) {
                     console.error("Error crítico durante la obtención del perfil, cerrando sesión:", error);
@@ -129,9 +120,5 @@ export const useAuth = () => {
   if (context === undefined) {
     throw new Error('useAuth debe ser utilizado dentro de un AuthProvider');
   }
-  
-  // Devuelve directamente el estado del store de Zustand.
-  // Esto asegura que cualquier componente que use este hook se re-renderice
-  // cuando cambie el estado de autenticación.
   return useAuthStore();
 };

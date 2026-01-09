@@ -9,13 +9,10 @@ export function createClient() {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   
   if (!supabaseUrl || !supabaseAnonKey) {
-    // Es importante loguear el error, pero no lanzar una excepción que rompa la app,
-    // simplemente devolver null para que el código que lo llama pueda manejarlo.
-    console.error("Supabase server error: Las variables de entorno NEXT_PUBLIC_SUPABASE_URL o NEXT_PUBLIC_SUPABASE_ANON_KEY no están configuradas.");
+    console.error("Error del servidor de Supabase: Las variables de entorno NEXT_PUBLIC_SUPABASE_URL o NEXT_PUBLIC_SUPABASE_ANON_KEY no están configuradas.");
     return null;
   }
 
-  // Este cliente se crea en cada solicitud del servidor, lo cual es correcto.
   return createServerClient(
     supabaseUrl,
     supabaseAnonKey,
@@ -28,15 +25,18 @@ export function createClient() {
           try {
             cookieStore.set({ name, value, ...options })
           } catch (error) {
-            // En Server Components, las cookies son de solo lectura, por lo que este bloque puede fallar.
-            // Ignorar el error es el comportamiento esperado en este caso.
+            // The `set` method was called from a Server Component.
+            // This can be ignored if you have middleware refreshing
+            // user sessions.
           }
         },
         remove(name: string, options: CookieOptions) {
           try {
             cookieStore.set({ name, value: '', ...options })
           } catch (error) {
-            // Similar al `set`, ignorar errores en Server Components.
+            // The `delete` method was called from a Server Component.
+            // This can be ignored if you have middleware refreshing
+            // user sessions.
           }
         },
       },
