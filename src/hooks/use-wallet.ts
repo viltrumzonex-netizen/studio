@@ -49,7 +49,7 @@ export const useWalletStore = create<WalletState>((set) => ({
         balance: balanceRes.data ?? 0,
         transactions: (transactionsRes.data as Transaction[]) ?? [],
         circulatingSupply: circulatingSupplyRes.data ?? 0,
-        exchangeRate: parseFloat(exchangeRateRes.data?.value) || 36.5, // Usar '?' para acceso seguro
+        exchangeRate: parseFloat(exchangeRateRes.data?.value) || 36.5,
         loading: false,
       });
 
@@ -90,6 +90,7 @@ export const useWallet = () => {
         if (initialUser) {
             fetchWalletData(initialUser);
         } else {
+            // Asegurarse de que si no hay usuario inicial, el estado no se quede en "cargando".
             reset();
         }
 
