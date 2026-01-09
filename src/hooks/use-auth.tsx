@@ -1,7 +1,7 @@
 
 'use client';
 
-import { createContext, useContext, type ReactNode, useEffect, useCallback, useRef } from 'react';
+import { createContext, useContext, type ReactNode, useEffect, useCallback } from 'react';
 import { create } from 'zustand';
 import { useWalletStore } from '@/hooks/use-wallet';
 import { createClient } from '@/lib/supabase/client';
@@ -76,15 +76,15 @@ const AuthContext = createContext<AuthState | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const supabase = useAuthStore((state) => state.supabase);
-    const dataFetchedRef = useRef(false);
 
     const handleAuthStateChange = useCallback(async (event: AuthChangeEvent, session: Session | null) => {
         const currentUser = session?.user;
-        
-        // Unificamos la lógica para SIGNED_IN y INITIAL_SESSION
-        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && currentUser && !dataFetchedRef.current) {
-            dataFetchedRef.current = true;
-            
+
+        // Si hay una sesión (ya sea por inicio de sesión o sesión inicial), obtenemos el perfil.
+        if (currentUser) {
+            // Establecer estado de carga para el perfil
+            useAuthStore.setState({ loading: true });
+
             const { data: profile, error: profileError } = await supabase
                 .from('profiles')
                 .select('role, display_name')
@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (profileError) {
                 console.error("Error al obtener el perfil:", profileError);
                 useAuthStore.setState({ user: null, loading: false });
-                dataFetchedRef.current = false;
+                await supabase.auth.signOut(); // Forzar cierre de sesión si el perfil no se puede cargar
                 return;
             }
 
@@ -110,17 +110,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // Iniciar la carga de datos de la billetera solo después de tener el perfil
             useWalletStore.getState().fetchWalletData();
 
-        } else if (event === 'SIGNED_OUT') {
-            dataFetchedRef.current = false;
+        } else if (event === 'SIGNED_OUT' || !currentUser) {
+            // Si el usuario cierra sesión o no hay usuario en la sesión inicial
             useAuthStore.setState({ user: null, loading: false });
             useWalletStore.getState().reset();
-        } else if (event === 'INITIAL_SESSION' && !currentUser) {
-            // Si no hay sesión inicial, la carga ha terminado
-            useAuthStore.setState({ loading: false });
         }
     }, [supabase]);
 
     useEffect(() => {
+        // Al montar el componente, establecemos el estado de carga inicial
+        useAuthStore.setState({ loading: true });
         const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthStateChange);
 
         return () => {
