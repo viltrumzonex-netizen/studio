@@ -32,6 +32,7 @@ export const useWalletStore = create<WalletState>((set) => ({
     set({ loading: true });
 
     try {
+      // Usamos Promise.all para ejecutar todas las consultas en paralelo para máxima eficiencia.
       const [balanceRes, transactionsRes, circulatingSupplyRes, exchangeRateRes] = await Promise.all([
         supabase.rpc('get_user_balance', { p_user_id: user.id }),
         supabase.from('transactions').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
@@ -48,54 +49,55 @@ export const useWalletStore = create<WalletState>((set) => ({
         balance: balanceRes.data ?? 0,
         transactions: (transactionsRes.data as Transaction[]) ?? [],
         circulatingSupply: circulatingSupplyRes.data ?? 0,
-        exchangeRate: parseFloat(exchangeRateRes.data.value) || 36.5,
+        exchangeRate: parseFloat(exchangeRateRes.data?.value) || 36.5, // Usar '?' para acceso seguro
         loading: false,
       });
 
     } catch (error: any) {
-      console.error('Error fetching wallet data:', error.message);
-      // Reset to a non-loading state but keep potentially fetched partial data if needed, or reset completely.
+      console.error('Error al obtener los datos de la billetera:', error.message);
+      // En caso de error, reseteamos a un estado conocido y no cargando.
       set({ ...initialState, loading: false });
     }
   },
   reset: () => set({ ...initialState, loading: false }),
 }));
 
+// Este hook ahora se encarga de conectar el estado de autenticación con el de la billetera.
 export const useWallet = () => {
     const walletState = useWalletStore();
     const { fetchWalletData, reset } = walletState;
 
+    // useEffect se suscribe a los cambios en el store de autenticación.
     useEffect(() => {
-        // Subscribe to auth changes
         const unsubscribe = useAuthStore.subscribe(
             (state, prevState) => {
                 const newUser = state.user;
                 const oldUser = prevState.user;
 
-                // User logged in
+                // Si hay un nuevo usuario (y no es el mismo que antes), obtenemos sus datos.
                 if (newUser && newUser.id !== oldUser?.id) {
                     fetchWalletData(newUser);
-                }
-                // User logged out
+                } 
+                // Si no hay nuevo usuario (cierre de sesión), reseteamos el estado de la billetera.
                 else if (!newUser && oldUser) {
                     reset();
                 }
             }
         );
         
-        // Initial check on mount
+        // Comprobación inicial al montar el componente, en caso de que ya haya una sesión activa.
         const initialUser = useAuthStore.getState().user;
         if (initialUser) {
             fetchWalletData(initialUser);
         } else {
-            // If there's no user on mount, ensure wallet isn't in a loading state.
             reset();
         }
 
+        // Limpieza de la suscripción al desmontar.
         return () => {
             unsubscribe();
         };
-    // fetchWalletData and reset are stable, so this effect runs once on mount.
+    // fetchWalletData y reset son estables, por lo que este efecto se ejecuta una sola vez.
     }, [fetchWalletData, reset]);
 
     const refreshWallet = () => {

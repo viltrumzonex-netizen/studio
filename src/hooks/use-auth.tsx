@@ -4,7 +4,8 @@
 import { createContext, useContext, type ReactNode, useEffect } from 'react';
 import { create } from 'zustand';
 import { createClient } from '@/lib/supabase/client';
-import type { SupabaseClient, Session } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { useWalletStore } from './use-wallet';
 
 export type User = {
   id: string;
@@ -58,34 +59,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     useEffect(() => {
         const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(async (event, session) => {
+            
             if (event === 'SIGNED_OUT' || !session) {
                 useAuthStore.setState({ user: null, loading: false });
+                useWalletStore.getState().reset(); // Limpiar datos de la billetera al cerrar sesión
                 return;
             }
             
+            // Para SIGNED_IN y INITIAL_SESSION
             if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
                 useAuthStore.setState({ loading: true });
                 try {
+                    // Consulta directa al perfil del usuario.
                     const { data: profile, error: profileError } = await supabaseClient
                         .from('profiles')
-                        .select('role, display_name')
+                        .select('*') // Usar '*' es a veces más robusto con RLS.
                         .eq('id', session.user.id)
-                        .limit(1) // Ensure we only ever get one row.
-                        .single(); // Fails if not exactly one row is returned (or zero if `maybeSingle` is used)
+                        .single();
 
                     if (profileError) {
-                        // This error will be thrown if RLS prevents access or if more than one row is found.
+                        // Este error es el que hemos estado viendo. Si ocurre, la sesión se cerrará.
                         throw new Error(`No se pudo obtener el perfil: ${profileError.message}`);
                     }
                     
-                    const simplifiedUser: User = {
-                        id: session.user.id,
-                        email: session.user.email,
-                        displayName: profile.display_name || 'Nuevo Usuario',
-                        role: profile.role || 'user'
-                    };
-                    
-                    useAuthStore.setState({ user: simplifiedUser, loading: false });
+                    if (profile) {
+                        const simplifiedUser: User = {
+                            id: session.user.id,
+                            email: session.user.email,
+                            displayName: profile.display_name || 'Nuevo Usuario',
+                            role: profile.role || 'user'
+                        };
+                        useAuthStore.setState({ user: simplifiedUser, loading: false });
+                    } else {
+                        // Caso improbable: el usuario de auth existe pero no el perfil.
+                        throw new Error("El perfil del usuario no existe en la base de datos.");
+                    }
 
                 } catch (error) {
                     console.error("Error crítico durante la obtención del perfil, cerrando sesión:", error);
