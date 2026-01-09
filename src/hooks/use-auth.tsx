@@ -81,7 +81,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const handleAuthStateChange = useCallback(async (event: AuthChangeEvent, session: Session | null) => {
         const currentUser = session?.user;
         
-        if (event === 'SIGNED_IN' && currentUser && !dataFetchedRef.current) {
+        // Unificamos la lógica para SIGNED_IN y INITIAL_SESSION
+        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && currentUser && !dataFetchedRef.current) {
             dataFetchedRef.current = true;
             
             const { data: profile, error: profileError } = await supabase
