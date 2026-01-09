@@ -1,7 +1,7 @@
 
 'use client';
 
-import { createContext, useContext, type ReactNode, useEffect } from 'react';
+import { createContext, useContext, type ReactNode, useEffect, useCallback, useRef } from 'react';
 import { create } from 'zustand';
 import { useWalletStore } from '@/hooks/use-wallet';
 import { createClient } from '@/lib/supabase/client';
@@ -75,50 +75,58 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-    // Usamos la instancia única del cliente desde el store
     const supabase = useAuthStore((state) => state.supabase);
+    const dataFetchedRef = useRef(false);
+
+    const handleAuthStateChange = useCallback(async (event: AuthChangeEvent, session: Session | null) => {
+        const currentUser = session?.user;
+        
+        if (event === 'SIGNED_IN' && currentUser && !dataFetchedRef.current) {
+            dataFetchedRef.current = true;
+            
+            const { data: profile, error: profileError } = await supabase
+                .from('profiles')
+                .select('role, display_name')
+                .eq('id', currentUser.id)
+                .single();
+
+            if (profileError) {
+                console.error("Error al obtener el perfil:", profileError);
+                useAuthStore.setState({ user: null, loading: false });
+                dataFetchedRef.current = false;
+                return;
+            }
+
+            const simplifiedUser: User = {
+                id: currentUser.id,
+                email: currentUser.email,
+                displayName: profile?.display_name || 'Nuevo Usuario',
+                role: profile?.role || 'user'
+            };
+
+            useAuthStore.setState({ user: simplifiedUser, loading: false });
+            
+            // Iniciar la carga de datos de la billetera solo después de tener el perfil
+            useWalletStore.getState().fetchWalletData();
+
+        } else if (event === 'SIGNED_OUT') {
+            dataFetchedRef.current = false;
+            useAuthStore.setState({ user: null, loading: false });
+            useWalletStore.getState().reset();
+        } else if (event === 'INITIAL_SESSION' && !currentUser) {
+            // Si no hay sesión inicial, la carga ha terminado
+            useAuthStore.setState({ loading: false });
+        }
+    }, [supabase]);
 
     useEffect(() => {
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            async (event: AuthChangeEvent, session: Session | null) => {
-                const currentUser = session?.user;
-                if (currentUser) {
-                    // Obtener perfil para obtener el rol y el nombre de usuario
-                    const { data: profile, error: profileError } = await supabase
-                        .from('profiles')
-                        .select('role, display_name')
-                        .eq('id', currentUser.id)
-                        .single();
-                    
-                    if (profileError && profileError.code !== 'PGRST116') { // PGRST116: no rows found
-                         console.error("Error al obtener el perfil:", profileError);
-                         useAuthStore.setState({ user: null, loading: false });
-                         return;
-                    }
-
-                    const simplifiedUser: User = {
-                        id: currentUser.id,
-                        email: currentUser.email,
-                        displayName: profile?.display_name || 'Nuevo Usuario',
-                        role: profile?.role || 'user'
-                    };
-                    useAuthStore.setState({ user: simplifiedUser, loading: false });
-                    
-                    // Iniciar la carga de datos de la billetera
-                    useWalletStore.getState().fetchWalletData();
-
-                } else {
-                    // Si no hay sesión, limpiar el estado
-                    useAuthStore.setState({ user: null, loading: false });
-                    useWalletStore.getState().reset();
-                }
-            }
-        );
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthStateChange);
 
         return () => {
             subscription?.unsubscribe();
         };
-    }, [supabase]);
+    }, [supabase, handleAuthStateChange]);
+
 
     return (
         <AuthContext.Provider value={useAuthStore(state => state)}>
