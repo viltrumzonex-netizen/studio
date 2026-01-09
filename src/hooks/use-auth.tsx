@@ -4,10 +4,9 @@
 import { createContext, useContext, type ReactNode, useEffect } from 'react';
 import { create } from 'zustand';
 import { createClient } from '@/lib/supabase/client';
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient, Session } from '@supabase/supabase-js';
 import { useWalletStore } from './use-wallet';
 
-// Define un tipo de Usuario más simple para el estado de nuestra aplicación
 export type User = {
   id: string;
   email?: string;
@@ -24,7 +23,6 @@ interface AuthState {
   logout: () => Promise<void>;
 }
 
-// Creamos una única instancia del cliente para usarla en todo el store
 const supabaseClient = createClient();
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -48,7 +46,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             }
         });
         if (error) throw error;
-        // El perfil se crea mediante un trigger en la DB
+        // El perfil se crea mediante un trigger en la DB, onAuthStateChange se encargará del resto.
         return data;
     },
     logout: async () => {
@@ -63,19 +61,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const store = useAuthStore();
 
     useEffect(() => {
-        const handleAuthStateChange = async (event: string, session: any) => {
-            // Evento de cierre de sesión o sesión expirada
+        const handleAuthStateChange = async (event: string, session: Session | null) => {
             if (event === 'SIGNED_OUT' || !session) {
                 useAuthStore.setState({ user: null, loading: false });
                 useWalletStore.getState().reset();
                 return;
             }
             
-            // Evento de inicio de sesión o sesión ya existente
-            if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'USER_UPDATED') {
+            // Este evento se dispara tanto en el login/registro como al cargar la página con una sesión existente.
+            if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+                // Solo intentar obtener el perfil si no tenemos ya un usuario.
+                // Esto previene bucles si múltiples eventos se disparan rápido.
+                if (useAuthStore.getState().user?.id === session.user.id) {
+                    return;
+                }
+
                 useAuthStore.setState({ loading: true });
                 try {
-                    // Consulta directa a la tabla profiles
+                    // Consulta directa al perfil del usuario.
+                    // Con RLS, esto solo debe devolver la fila del usuario autenticado.
                     const { data: profile, error: profileError } = await supabaseClient
                         .from('profiles')
                         .select('role, display_name')
@@ -83,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         .single();
 
                     if (profileError) {
+                        // Lanzar el error para que sea capturado por el bloque catch.
                         throw new Error(`No se pudo obtener el perfil: ${profileError.message}`);
                     }
                     
@@ -94,8 +99,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     };
                     
                     useAuthStore.setState({ user: simplifiedUser, loading: false });
-                    // Una vez que el usuario está, llamamos a la carga de la billetera
-                    useWalletStore.getState().fetchWalletData(simplifiedUser);
+                    // La carga de la billetera es manejada por el hook useWallet,
+                    // que se suscribe a los cambios de useAuthStore.
 
                 } catch (error) {
                     console.error("Error crítico durante la obtención del perfil, cerrando sesión:", error);
@@ -124,5 +129,9 @@ export const useAuth = () => {
   if (context === undefined) {
     throw new Error('useAuth debe ser utilizado dentro de un AuthProvider');
   }
-  return context;
+  
+  // Devuelve directamente el estado del store de Zustand.
+  // Esto asegura que cualquier componente que use este hook se re-renderice
+  // cuando cambie el estado de autenticación.
+  return useAuthStore();
 };
