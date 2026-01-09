@@ -22,6 +22,8 @@ interface AuthState {
   login: (email: string, password: string) => Promise<any>;
   register: (email: string, password: string, displayName: string) => Promise<any>;
   logout: () => Promise<void>;
+  _setUser: (user: User | null) => void;
+  _setLoading: (loading: boolean) => void;
 }
 
 // Creamos una única instancia del cliente para usarla en todo el store
@@ -31,6 +33,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     user: null,
     loading: true, 
     supabase: supabaseClient,
+    _setUser: (user) => set({ user }),
+    _setLoading: (loading) => set({ loading }),
     login: async (email, password) => {
         const supabase = get().supabase;
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -40,10 +44,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     },
     register: async (email, password, displayName) => {
         const supabase = get().supabase;
-
-        // El trigger de la base de datos `handle_new_user` se encarga de crear
-        // el perfil del usuario en la tabla 'profiles'.
-        const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
             email,
             password,
             options: {
@@ -52,82 +53,69 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 }
             }
         });
-
-        if (signUpError) {
-            console.error("Error durante el signUp:", signUpError);
-            throw signUpError;
-        }
-
-        if (!authData.user) {
-            throw new Error("El registro no devolvió un usuario. Por favor, intenta iniciar sesión.");
-        }
-        
-        return authData;
+        if (error) throw error;
+        return data;
     },
     logout: async () => {
         const supabase = get().supabase;
         await supabase.auth.signOut();
+        set({ user: null });
+        useWalletStore.getState().reset();
     },
 }));
 
-const AuthContext = createContext<AuthState | undefined>(undefined);
+const AuthContext = createContext<Omit<AuthState, '_setUser' | '_setLoading'> | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const supabase = useAuthStore((state) => state.supabase);
-
-    const handleAuthStateChange = useCallback(async (event: AuthChangeEvent, session: Session | null) => {
-        useWalletStore.getState().reset();
-        const currentUser = session?.user;
-
-        if (!currentUser) {
-            useAuthStore.setState({ user: null, loading: false });
-            return;
-        }
-
-        // Para cualquier evento con sesión (SIGNED_IN, INITIAL_SESSION), cargamos los datos
-        if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-            useAuthStore.setState({ loading: true });
-
-            // Usamos RPC para obtener el perfil de forma segura, evitando problemas de RLS post-login.
-            const { data: profile, error: profileError } = await supabase
-                .rpc('get_user_profile')
-                .single();
-
-            if (profileError) {
-                console.error("Error al obtener el perfil:", profileError);
-                useAuthStore.setState({ user: null, loading: false });
-                await supabase.auth.signOut(); // Forzar cierre de sesión si el perfil no se puede cargar
-                return;
-            }
-            
-            const simplifiedUser: User = {
-                id: currentUser.id,
-                email: currentUser.email,
-                displayName: profile?.display_name || 'Nuevo Usuario',
-                role: profile?.role || 'user'
-            };
-            
-            useAuthStore.setState({ user: simplifiedUser, loading: false });
-            
-            // Una vez que tenemos el perfil, cargamos los datos de la billetera.
-            useWalletStore.getState().fetchWalletData();
-        } else if (event === 'SIGNED_OUT') {
-            useAuthStore.setState({ user: null, loading: false });
-        }
-    }, [supabase]);
+    const store = useAuthStore();
 
     useEffect(() => {
-        useAuthStore.setState({ loading: true });
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthStateChange);
+        store._setLoading(true);
+        const { data: { subscription } } = store.supabase.auth.onAuthStateChange(
+            async (event, session) => {
+                const currentUser = session?.user;
+
+                if (!currentUser) {
+                    store._setUser(null);
+                    store._setLoading(false);
+                    return;
+                }
+
+                // Para cualquier evento con sesión (SIGNED_IN, INITIAL_SESSION), cargamos los datos
+                if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+                     try {
+                        const { data: profile, error: profileError } = await store.supabase
+                            .rpc('get_user_profile')
+                            .single();
+                        
+                        if (profileError) throw profileError;
+
+                        const simplifiedUser: User = {
+                            id: currentUser.id,
+                            email: currentUser.email,
+                            displayName: profile?.display_name || 'Nuevo Usuario',
+                            role: profile?.role || 'user'
+                        };
+                        
+                        store._setUser(simplifiedUser);
+
+                     } catch (error) {
+                        console.error("Error crítico al obtener perfil, cerrando sesión:", error);
+                        store._setUser(null);
+                        await store.supabase.auth.signOut();
+                     }
+                }
+                 store._setLoading(false);
+            }
+        );
 
         return () => {
             subscription?.unsubscribe();
         };
-    }, [supabase, handleAuthStateChange]);
-
+    }, [store]);
 
     return (
-        <AuthContext.Provider value={useAuthStore(state => state)}>
+        <AuthContext.Provider value={store}>
             {children}
         </AuthContext.Provider>
     );

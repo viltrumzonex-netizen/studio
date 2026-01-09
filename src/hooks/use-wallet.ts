@@ -3,8 +3,9 @@
 
 import { create } from 'zustand';
 import type { Transaction } from '@/lib/types';
-import { useAuthStore } from './use-auth';
+import { useAuthStore, type User } from './use-auth';
 import { createClient } from '@/lib/supabase/client';
+import { useEffect } from 'react';
 
 interface WalletState {
   balance: number;
@@ -12,30 +13,30 @@ interface WalletState {
   circulatingSupply: number;
   exchangeRate: number;
   loading: boolean;
-  fetchWalletData: () => Promise<void>;
-  refreshWallet: () => void;
+  fetchWalletData: (user: User) => Promise<void>;
   reset: () => void;
 }
 
-export const useWalletStore = create<WalletState>((set, get) => ({
+const initialState = {
   balance: 0,
   transactions: [],
   circulatingSupply: 0,
   exchangeRate: 36.5,
   loading: true,
-  fetchWalletData: async () => {
-    const supabase = createClient();
-    const user = useAuthStore.getState().user;
+};
 
+export const useWalletStore = create<WalletState>((set, get) => ({
+  ...initialState,
+  fetchWalletData: async (user: User) => {
+    const supabase = createClient();
     if (!user) {
-      set({ loading: false, balance: 0, transactions: [] });
+      set({ ...initialState, loading: false });
       return;
     }
     
     set({ loading: true });
 
     try {
-      // Usamos RPC para llamar a las funciones de la base de datos
       const [balanceRes, transactionsRes, circulatingSupplyRes, exchangeRateRes] = await Promise.all([
         supabase.rpc('get_user_balance', { p_user_id: user.id }),
         supabase.from('transactions').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
@@ -57,19 +58,34 @@ export const useWalletStore = create<WalletState>((set, get) => ({
 
     } catch (error: any) {
       console.error('Error fetching wallet data:', error.message);
-      // Mantener los valores por defecto en caso de error, pero indicar que la carga terminó
-      set({ balance: 0, transactions: [] });
+      set({ ...initialState, loading: false });
     } finally {
       set({ loading: false });
     }
   },
-  refreshWallet: () => {
-    get().fetchWalletData();
-  },
-  reset: () => set({ balance: 0, transactions: [], circulatingSupply: 0, loading: true, exchangeRate: 36.5 }),
+  reset: () => set(initialState),
 }));
 
+
+// Custom hook que reacciona a los cambios de autenticación
 export const useWallet = () => {
-    const state = useWalletStore();
-    return state;
+    const walletState = useWalletStore();
+    const { user, loading: authLoading } = useAuthStore();
+
+    useEffect(() => {
+        if (user && !authLoading) {
+            walletState.fetchWalletData(user);
+        } else if (!user && !authLoading) {
+            walletState.reset();
+        }
+    }, [user, authLoading]);
+
+    // Exponer una función de actualización manual
+    const refreshWallet = () => {
+        if (user) {
+            walletState.fetchWalletData(user);
+        }
+    };
+
+    return { ...walletState, refreshWallet };
 };
