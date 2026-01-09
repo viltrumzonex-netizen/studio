@@ -41,10 +41,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     register: async (email, password, displayName) => {
         const supabase = get().supabase;
 
-        // Paso 1: Registrar al usuario en Supabase Auth
+        // El registro de usuario llama a signUp. Un trigger en la base de datos
+        // se encargará de crear el perfil del usuario en la tabla 'profiles'.
         const { data: authData, error: signUpError } = await supabase.auth.signUp({
             email,
             password,
+            options: {
+                data: {
+                    display_name: displayName,
+                }
+            }
         });
 
         if (signUpError) {
@@ -53,27 +59,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
 
         if (!authData.user) {
-            throw new Error("El registro tuvo éxito pero no se devolvió ningún usuario. Por favor, intenta iniciar sesión.");
-        }
-
-        // Paso 2: Insertar manualmente el perfil en la tabla public.profiles.
-        // La política RLS "Users can insert their own profile." permite esta operación.
-        const { error: profileError } = await supabase
-            .from('profiles')
-            .insert({ 
-                id: authData.user.id, 
-                display_name: displayName,
-                role: 'user' 
-            });
-
-        if (profileError) {
-            console.error("Error al crear el perfil después del registro:", profileError);
-            // Opcional: Podrías querer eliminar el usuario de auth si la creación del perfil falla.
-            // await supabase.auth.admin.deleteUser(authData.user.id);
-            throw new Error(`Usuario registrado, pero falló la creación del perfil: ${profileError.message}`);
+            throw new Error("El registro no devolvió un usuario. Por favor, intenta iniciar sesión.");
         }
         
-        // Si todo sale bien, la sesión se actualizará y onAuthStateChange se encargará del resto.
+        // Si el registro es exitoso, el trigger se encarga de crear el perfil.
+        // onAuthStateChange se encargará de actualizar el estado de la aplicación.
         return authData;
     },
     logout: async () => {
