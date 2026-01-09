@@ -1,9 +1,11 @@
+
 'use client';
 
 import { createContext, useContext, type ReactNode, useEffect } from 'react';
 import { create } from 'zustand';
 import { createClient } from '@/lib/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { useWalletStore } from './use-wallet';
 
 // Define un tipo de Usuario más simple para el estado de nuestra aplicación
 export type User = {
@@ -61,44 +63,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const store = useAuthStore();
 
     useEffect(() => {
-        useAuthStore.setState({ loading: true });
+        const handleAuthStateChange = async (event: string, session: any) => {
+            // Evento de cierre de sesión o sesión expirada
+            if (event === 'SIGNED_OUT' || !session) {
+                useAuthStore.setState({ user: null, loading: false });
+                useWalletStore.getState().reset();
+                return;
+            }
+            
+            // Evento de inicio de sesión o sesión ya existente
+            if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'USER_UPDATED') {
+                useAuthStore.setState({ loading: true });
+                try {
+                    // Consulta directa a la tabla profiles
+                    const { data: profile, error: profileError } = await supabaseClient
+                        .from('profiles')
+                        .select('role, display_name')
+                        .eq('id', session.user.id)
+                        .single();
 
-        const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(
-            async (event, session) => {
-                // Evento de cierre de sesión o sesión expirada
-                if (event === 'SIGNED_OUT' || !session) {
-                    useAuthStore.setState({ user: null, loading: false });
-                    return;
-                }
-                
-                // Evento de inicio de sesión o sesión ya existente
-                if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-                    try {
-                        const { data: profile, error: profileError } = await supabaseClient
-                            .rpc('get_user_profile')
-                            .single();
-
-                        if (profileError) {
-                            throw new Error(`No se pudo obtener el perfil: ${profileError.message}`);
-                        }
-                        
-                        const simplifiedUser: User = {
-                            id: session.user.id,
-                            email: session.user.email,
-                            displayName: profile.display_name || 'Nuevo Usuario',
-                            role: profile.role || 'user'
-                        };
-                        
-                        useAuthStore.setState({ user: simplifiedUser, loading: false });
-
-                    } catch (error) {
-                        console.error("Error crítico durante la obtención del perfil, cerrando sesión:", error);
-                        await supabaseClient.auth.signOut();
-                        useAuthStore.setState({ user: null, loading: false });
+                    if (profileError) {
+                        throw new Error(`No se pudo obtener el perfil: ${profileError.message}`);
                     }
+                    
+                    const simplifiedUser: User = {
+                        id: session.user.id,
+                        email: session.user.email,
+                        displayName: profile.display_name || 'Nuevo Usuario',
+                        role: profile.role || 'user'
+                    };
+                    
+                    useAuthStore.setState({ user: simplifiedUser, loading: false });
+                    // Una vez que el usuario está, llamamos a la carga de la billetera
+                    useWalletStore.getState().fetchWalletData(simplifiedUser);
+
+                } catch (error) {
+                    console.error("Error crítico durante la obtención del perfil, cerrando sesión:", error);
+                    await supabaseClient.auth.signOut();
+                    useAuthStore.setState({ user: null, loading: false });
                 }
             }
-        );
+        };
+
+        const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(handleAuthStateChange);
 
         return () => {
             subscription?.unsubscribe();
