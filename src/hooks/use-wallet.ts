@@ -1,4 +1,3 @@
-
 'use client';
 
 import { create } from 'zustand';
@@ -25,7 +24,7 @@ const initialState = {
   loading: true,
 };
 
-export const useWalletStore = create<WalletState>((set, get) => ({
+export const useWalletStore = create<WalletState>((set) => ({
   ...initialState,
   fetchWalletData: async (user: User) => {
     const supabase = createClient();
@@ -54,34 +53,53 @@ export const useWalletStore = create<WalletState>((set, get) => ({
         transactions: transactionsRes.data as Transaction[] ?? [],
         circulatingSupply: circulatingSupplyRes.data ?? 0,
         exchangeRate: parseFloat(exchangeRateRes.data.value) || 36.5,
+        loading: false,
       });
 
     } catch (error: any) {
       console.error('Error fetching wallet data:', error.message);
       set({ ...initialState, loading: false });
-    } finally {
-      set({ loading: false });
     }
   },
   reset: () => set(initialState),
 }));
 
-
-// Custom hook que reacciona a los cambios de autenticación
+// Este hook se suscribe a los cambios de autenticación para cargar/limpiar los datos de la billetera.
 export const useWallet = () => {
     const walletState = useWalletStore();
-    const { user, loading: authLoading } = useAuthStore();
 
     useEffect(() => {
-        if (user && !authLoading) {
-            walletState.fetchWalletData(user);
-        } else if (!user && !authLoading) {
-            walletState.reset();
+        const unsubscribe = useAuthStore.subscribe(
+            (state, prevState) => {
+                // Usuario ha iniciado sesión
+                if (state.user && !prevState.user) {
+                    walletState.fetchWalletData(state.user);
+                }
+                // Usuario ha cerrado sesión
+                else if (!state.user && prevState.user) {
+                    walletState.reset();
+                }
+            }
+        );
+
+        // Comprobar estado inicial en caso de que la página se cargue con un usuario ya logueado
+        const initialUser = useAuthStore.getState().user;
+        if (initialUser) {
+            walletState.fetchWalletData(initialUser);
+        } else {
+             // Si no hay usuario inicial, nos aseguramos de que la billetera no esté en estado de carga
+            useWalletStore.setState({ loading: false });
         }
-    }, [user, authLoading]);
+
+
+        return () => {
+            unsubscribe();
+        };
+    }, [walletState.fetchWalletData, walletState.reset]);
 
     // Exponer una función de actualización manual
     const refreshWallet = () => {
+        const user = useAuthStore.getState().user;
         if (user) {
             walletState.fetchWalletData(user);
         }

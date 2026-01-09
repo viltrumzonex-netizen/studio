@@ -1,11 +1,9 @@
-
 'use client';
 
-import { createContext, useContext, type ReactNode, useEffect, useCallback } from 'react';
+import { createContext, useContext, type ReactNode, useEffect } from 'react';
 import { create } from 'zustand';
-import { useWalletStore } from '@/hooks/use-wallet';
 import { createClient } from '@/lib/supabase/client';
-import type { AuthChangeEvent, Session, SupabaseClient, User as SupabaseUser } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Define un tipo de Usuario más simple para el estado de nuestra aplicación
 export type User = {
@@ -22,8 +20,6 @@ interface AuthState {
   login: (email: string, password: string) => Promise<any>;
   register: (email: string, password: string, displayName: string) => Promise<any>;
   logout: () => Promise<void>;
-  _setUser: (user: User | null) => void;
-  _setLoading: (loading: boolean) => void;
 }
 
 // Creamos una única instancia del cliente para usarla en todo el store
@@ -33,18 +29,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     user: null,
     loading: true, 
     supabase: supabaseClient,
-    _setUser: (user) => set({ user }),
-    _setLoading: (loading) => set({ loading }),
     login: async (email, password) => {
-        const supabase = get().supabase;
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await get().supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        // El estado del usuario será actualizado por onAuthStateChange
+        // El estado se actualizará a través de onAuthStateChange
         return data;
     },
     register: async (email, password, displayName) => {
-        const supabase = get().supabase;
-        const { data, error } = await supabase.auth.signUp({
+        const { data, error } = await get().supabase.auth.signUp({
             email,
             password,
             options: {
@@ -54,65 +46,64 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             }
         });
         if (error) throw error;
+        // El perfil se crea mediante un trigger en la DB
         return data;
     },
     logout: async () => {
-        const supabase = get().supabase;
-        await supabase.auth.signOut();
-        set({ user: null });
-        useWalletStore.getState().reset();
+        await get().supabase.auth.signOut();
+        // El estado se limpiará a través de onAuthStateChange
     },
 }));
 
-const AuthContext = createContext<Omit<AuthState, '_setUser' | '_setLoading'> | undefined>(undefined);
+const AuthContext = createContext<AuthState | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const store = useAuthStore();
 
     useEffect(() => {
-        store._setLoading(true);
-        const { data: { subscription } } = store.supabase.auth.onAuthStateChange(
-            async (event, session) => {
-                const currentUser = session?.user;
+        useAuthStore.setState({ loading: true });
 
-                if (!currentUser) {
-                    store._setUser(null);
-                    store._setLoading(false);
+        const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(
+            async (event, session) => {
+                // Evento de cierre de sesión o sesión expirada
+                if (event === 'SIGNED_OUT' || !session) {
+                    useAuthStore.setState({ user: null, loading: false });
                     return;
                 }
-
-                // Para cualquier evento con sesión (SIGNED_IN, INITIAL_SESSION), cargamos los datos
+                
+                // Evento de inicio de sesión o sesión ya existente
                 if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-                     try {
-                        const { data: profile, error: profileError } = await store.supabase
+                    try {
+                        const { data: profile, error: profileError } = await supabaseClient
                             .rpc('get_user_profile')
                             .single();
-                        
-                        if (profileError) throw profileError;
 
+                        if (profileError) {
+                            throw new Error(`No se pudo obtener el perfil: ${profileError.message}`);
+                        }
+                        
                         const simplifiedUser: User = {
-                            id: currentUser.id,
-                            email: currentUser.email,
-                            displayName: profile?.display_name || 'Nuevo Usuario',
-                            role: profile?.role || 'user'
+                            id: session.user.id,
+                            email: session.user.email,
+                            displayName: profile.display_name || 'Nuevo Usuario',
+                            role: profile.role || 'user'
                         };
                         
-                        store._setUser(simplifiedUser);
+                        useAuthStore.setState({ user: simplifiedUser, loading: false });
 
-                     } catch (error) {
-                        console.error("Error crítico al obtener perfil, cerrando sesión:", error);
-                        store._setUser(null);
-                        await store.supabase.auth.signOut();
-                     }
+                    } catch (error) {
+                        console.error("Error crítico durante la obtención del perfil, cerrando sesión:", error);
+                        await supabaseClient.auth.signOut();
+                        useAuthStore.setState({ user: null, loading: false });
+                    }
                 }
-                 store._setLoading(false);
             }
         );
 
         return () => {
             subscription?.unsubscribe();
         };
-    }, [store]);
+    }, []);
 
     return (
         <AuthContext.Provider value={store}>
