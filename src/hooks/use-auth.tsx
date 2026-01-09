@@ -41,8 +41,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     register: async (email, password, displayName) => {
         const supabase = get().supabase;
 
-        // El registro de usuario llama a signUp. Un trigger en la base de datos
-        // se encargará de crear el perfil del usuario en la tabla 'profiles'.
+        // El trigger de la base de datos `handle_new_user` se encarga de crear
+        // el perfil del usuario en la tabla 'profiles'.
         const { data: authData, error: signUpError } = await supabase.auth.signUp({
             email,
             password,
@@ -62,8 +62,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             throw new Error("El registro no devolvió un usuario. Por favor, intenta iniciar sesión.");
         }
         
-        // Si el registro es exitoso, el trigger se encarga de crear el perfil.
-        // onAuthStateChange se encargará de actualizar el estado de la aplicación.
         return authData;
     },
     logout: async () => {
@@ -78,33 +76,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const supabase = useAuthStore((state) => state.supabase);
 
     const handleAuthStateChange = useCallback(async (event: AuthChangeEvent, session: Session | null) => {
-        const currentUser = session?.user;
-        
-        // Limpiamos los datos de la billetera en cada cambio de estado para estar seguros
         useWalletStore.getState().reset();
-        
-        if (event === 'SIGNED_OUT' || !currentUser) {
+        const currentUser = session?.user;
+
+        if (!currentUser) {
             useAuthStore.setState({ user: null, loading: false });
             return;
         }
 
-        // Si hay una sesión (SIGNED_IN o INITIAL_SESSION), obtenemos el perfil.
-        if (currentUser) {
+        // Para cualquier evento con sesión (SIGNED_IN, INITIAL_SESSION), cargamos los datos
+        if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
             useAuthStore.setState({ loading: true });
 
+            // Usamos RPC para obtener el perfil de forma segura, evitando problemas de RLS post-login.
             const { data: profile, error: profileError } = await supabase
-                .from('profiles')
-                .select('role, display_name')
-                .eq('id', currentUser.id)
+                .rpc('get_user_profile')
                 .single();
-            
+
             if (profileError) {
                 console.error("Error al obtener el perfil:", profileError);
                 useAuthStore.setState({ user: null, loading: false });
                 await supabase.auth.signOut(); // Forzar cierre de sesión si el perfil no se puede cargar
                 return;
             }
-
+            
             const simplifiedUser: User = {
                 id: currentUser.id,
                 email: currentUser.email,
@@ -116,7 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             
             // Una vez que tenemos el perfil, cargamos los datos de la billetera.
             useWalletStore.getState().fetchWalletData();
-        } else {
+        } else if (event === 'SIGNED_OUT') {
             useAuthStore.setState({ user: null, loading: false });
         }
     }, [supabase]);
